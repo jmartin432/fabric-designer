@@ -9,7 +9,7 @@ import { RouterLink, RouterView } from 'vue-router'
               <img alt="Back and Forth Logo" class="logo title-image" src="@/assets/images/logo.svg" width="125" height="125" />
             </div>
             <div class="title-text-container">
-                <h1>Back and Forth</h1>
+                <h1>Fabric Designer</h1>
                 <h2>Designs and Dry Goods</h2>
             </div>
         </div>
