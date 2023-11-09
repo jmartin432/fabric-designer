@@ -1,0 +1,94 @@
+@import './base.css';
+
+body {
+  background-color: #220b21;
+}
+
+#app {
+  max-width: 1280px;
+  height: max-content;
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+  /* border: 1px solid red; */
+}
+
+h3 {
+  font-family: Poppins;
+  font-size: 2rem;
+  color: #75CBD1;
+}
+
+p {
+    font-family: Alegreya;
+    font-size: 1.25rem;
+    color: #ddd;
+    padding: 0 1rem;
+}
+
+.view-container {
+    padding: 30px;
+    /* border: 1px solid red; */
+}
+
+button {
+    background-color: #D0A9CD;
+    border: 2px solid #AC68A7;
+    border-radius: 4px;
+    color: black;
+    padding: 10px 30px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1rem;
+    transition-duration: 0.4s;
+    font-family: "Open sans";
+    font-size: 1rem;
+}
+
+button:hover {
+  box-shadow: 5px 5px 10px #AC68A777, -5px -5px 10px #AC68A777, -5px 5px 10px #AC68A777,5px -5px 10px #AC68A777;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .view-container {
+        padding: 0;
+    }
+    #app {
+      padding: 1rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+    }
+
+    p {
+      font-size: 1rem;
+    }
+}
+
+/* a, .green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0 2rem;
+  } */
+/* } */
