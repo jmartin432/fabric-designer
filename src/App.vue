@@ -10,7 +10,7 @@ import { RouterLink, RouterView } from 'vue-router'
             </div>
             <div class="title-text-container">
                 <h1>Fabric Designer</h1>
-                <h2>Designs and Dry Goods</h2>
+                <h2>A Generative Pattern Maker</h2>
             </div>
         </div>
             <nav>
