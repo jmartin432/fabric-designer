@@ -22,15 +22,20 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     },
     {
-      path: '/contact',
-      name: 'contact',
-      component: () => import('../views/ContactView.vue')
+      path: '/canvas',
+      name: 'canvas',
+      component: () => import('../views/CanvasView.vue')
     },
-    {
-      path: '/meeting',
-      name: 'meeting',
-      component: () => import('../views/MeetingView.vue')
-    }
+    // {
+    //   path: '/contact',
+    //   name: 'contact',
+    //   component: () => import('../views/ContactView.vue')
+    // },
+    // {
+    //   path: '/meeting',
+    //   name: 'meeting',
+    //   component: () => import('../views/MeetingView.vue')
+    // }
   ]
 })
 

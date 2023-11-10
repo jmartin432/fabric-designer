@@ -15,9 +15,10 @@ import { RouterLink, RouterView } from 'vue-router'
         </div>
             <nav>
                 <RouterLink to="/">Home</RouterLink>
-                <RouterLink to="/contact">Contact</RouterLink>
-                <RouterLink to="/meeting">Meet</RouterLink>
-                <!-- <RouterLink to="/about">About</RouterLink> -->
+                <RouterLink to="/about">About</RouterLink>
+                <!-- <RouterLink to="/contact">Contact</RouterLink>
+                <RouterLink to="/meeting">Meet</RouterLink> -->
+                <RouterLink to="/about">About</RouterLink>
             </nav>
     </header>
 
