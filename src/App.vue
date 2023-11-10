@@ -30,11 +30,11 @@ import { RouterLink, RouterView } from 'vue-router'
                     <img class="social-icon" src="@/assets/images/github_mark.svg" alt="GitHub Logo" />
                 </a>
             </div>
-            <div  class="social-icon-container">
+            <!-- <div  class="social-icon-container">
                 <a href="https://www.linkedin.com/in/justinleemartin" target="_blamk">
                     <img class="social-icon" src="@/assets/images/linkedin_mark.svg" alt="Linkedin Logo" />
                 </a>
-            </div>
+            </div> -->
             <div  class="social-icon-container">
                 <img class="social-icon" src="@/assets/images/instagram_mark.svg" href="" alt="Instagram Logo" target="_blamk" />
             </div>
