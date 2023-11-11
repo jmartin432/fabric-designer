@@ -5,6 +5,8 @@
 
 <!-- https://github.com/joeiddon/perlin/tree/master -->
 <!-- https://rtouti.github.io/graphics/perlin-noise-algorithm -->
+<!-- https://adrianb.io/2014/08/09/perlinnoise.html -->
+<!-- https://sighack.com/post/getting-creative-with-perlin-noise-fields -->
 <template>
     <div id="container">
         <div id="canvas-container" class="flex-item">
@@ -52,7 +54,7 @@
                     5: {id: 5, val: 64},
                 },
                 numberOfGrids: 4,
-                numberOfPixels: 256,
+                numberOfPixels: 512,
                 vueCanvas: {},
                 pixelData: {},
                 fileName: '',
@@ -121,10 +123,16 @@
                 for (let x = 0; x < this.numberOfPixels; x++){
                     for (let y = 0; y < this.numberOfPixels; y++){
                         let value = (this.perlin.get(x / gridSize, y / gridSize) + 1 / 2);
-                        let rgbColor = this.hslToRgb(value * 360, 30, 30)
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = rgbColor[0];
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = rgbColor[1];
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = rgbColor[2];
+                        let rgbColor = this.hslToRgb(value * 240 + 20, 100, 50)
+                        let redEffect = .4
+                        let greenEffect = .99
+                        let blueEffect = .4
+                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = (.3 * (1 - value ) + .7) * redEffect * 255;
+                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = value * greenEffect * 255;
+                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = (.5 * (1 - value) + .5) * blueEffect * 255;
+                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = rgbColor[0];
+                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = rgbColor[1];
+                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = rgbColor[2];
                         this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
                     
                     }
@@ -145,8 +153,8 @@
 
     #main-canvas {
         border: 1px solid black;
-        width: 256px;
-        height: 256px;
+        width: 512px;
+        height: 512px;
     }
     
     .flex-item {
