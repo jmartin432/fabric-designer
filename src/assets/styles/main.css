@@ -31,16 +31,59 @@ p {
     /* border: 1px solid red; */
 }
 
+a {
+  color: #75CBD1;
+}
+
+label {
+  color: #75CBD1;
+  margin-bottom: .25rem;
+  font-family: "Open Sans";
+  font-size: .8rem;
+}
+
+label span {
+  color: #AC6868;
+}
+
+input, label {
+  display: block;
+}
+
+input, textarea, select{
+  padding: 4px 3px;
+  border: 2px solid #AC68A7;
+  border-radius: 4px;
+  background-color: #D2C8D2;
+  font-family: Alegreya;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border: 3px solid #AC68A7;
+  border-radius: 4px;
+}
+
+input {
+  width: 80%;
+}
+
+textarea {
+  width: 80%
+}
+
 button {
     background-color: #D0A9CD;
     border: 2px solid #AC68A7;
     border-radius: 4px;
     color: black;
-    padding: 10px 30px;
+    padding: 5px 10px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 1rem;
+    font-size: .8rem;
     transition-duration: 0.4s;
     font-family: "Open sans";
     font-size: 1rem;

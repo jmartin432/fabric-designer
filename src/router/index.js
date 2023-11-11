@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import AboutView from '../views/AboutView.vue'
 
 const router = createRouter({
   scrollBehavior(to, from, savedPosition) {
@@ -11,31 +11,16 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: AboutView
     },
     {
-      path: '/about',
-      name: 'about',
+      path: '/perlin-noise',
+      name: 'perlin-noise',
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue')
-    },
-    {
-      path: '/canvas',
-      name: 'canvas',
-      component: () => import('../views/CanvasView.vue')
-    },
-    // {
-    //   path: '/contact',
-    //   name: 'contact',
-    //   component: () => import('../views/ContactView.vue')
-    // },
-    // {
-    //   path: '/meeting',
-    //   name: 'meeting',
-    //   component: () => import('../views/MeetingView.vue')
-    // }
+      component: () => import('../views/PerlinNoiseView.vue')
+    }
   ]
 })
 

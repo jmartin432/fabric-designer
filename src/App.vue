@@ -14,11 +14,8 @@ import { RouterLink, RouterView } from 'vue-router'
             </div>
         </div>
             <nav>
-                <RouterLink to="/">Home</RouterLink>
-                <RouterLink to="/about">About</RouterLink>
-                <!-- <RouterLink to="/contact">Contact</RouterLink>
-                <RouterLink to="/meeting">Meet</RouterLink> -->
-                <RouterLink to="/about">About</RouterLink>
+                <RouterLink to="/">About</RouterLink>
+                <RouterLink to="/perlin-noise">Perlin Noise</RouterLink>
             </nav>
     </header>
 
@@ -27,7 +24,7 @@ import { RouterLink, RouterView } from 'vue-router'
     <footer>
         <div id="footer-social-icons">
             <div class="social-icon-container">
-                <a href="https://github.com/jmartin432/back-and-forth-designs/blob/main/README.md" target="_blamk">
+                <a href="https://github.com/jmartin432/fabric-designer" target="_blamk">
                     <img class="social-icon" src="@/assets/images/github_mark.svg" alt="GitHub Logo" />
                 </a>
             </div>
@@ -37,7 +34,9 @@ import { RouterLink, RouterView } from 'vue-router'
                 </a>
             </div> -->
             <div  class="social-icon-container">
-                <img class="social-icon" src="@/assets/images/instagram_mark.svg" href="" alt="Instagram Logo" target="_blamk" />
+                <a href="https://www.instagram.com/backandforthdesigns/" target="_blank">
+                    <img class="social-icon" src="@/assets/images/instagram_mark.svg" alt="Instagram Logo" />
+                </a>
             </div>
         </div>
         <div id="footer-message">
