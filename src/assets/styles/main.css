@@ -74,6 +74,10 @@ textarea {
   width: 80%
 }
 
+select.number-select {
+  width: 70px;
+}
+
 button {
     background-color: #D0A9CD;
     border: 2px solid #AC68A7;
