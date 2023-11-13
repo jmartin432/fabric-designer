@@ -1,6 +1,6 @@
 <script setup>
-    import Vector2 from "../classes/Vector2";
-    import Perlin from "../classes/Perlin";
+    import * as perlin from '../modules/perlin.js';
+    import * as utils from '../modules/utils';
 </script>
 
 <!-- https://github.com/joeiddon/perlin/tree/master -->
@@ -13,7 +13,7 @@
             <canvas id="main-canvas" :width="numberOfPixels" :height="numberOfPixels"></canvas>
         </div>
         <div class="flex-item">
-            <button  class="control-item" @click="seed">Reseed</button>
+            <button  class="control-item" @click="resetGrid">Reseed</button>
             <div class="control-item">
                 <label for="grid-size">Grid Size</label>
                 <select name="grid-size" id="grid-size-selector" v-model="numberOfGrids">
@@ -21,6 +21,20 @@
                         {{ item.val }}
                     </option>
                 </select>
+            </div>
+            <div class="control-item">
+                <label for="number-of-colors">Number of Colors</label>
+                <select name="number-of-colors" id="number-of-colors" :value="colors.length" @change="updateNumberOfColors">
+                    <option v-for="index in 10" :value="index + 1" :key="index + 1">
+                        {{ index + 1 }}
+                    </option>
+                </select>
+            </div>
+            <div id="color=pickers">
+                <div v-for="(item, index) in colors" :key=index class="control-item">
+                    <label for="head">Color {{ index }}</label>
+                    <input type="color" :id="'color-' + index" :name="'color-' + index" v-model="colors[index].value" @input="changeColor"/>
+                </div>
             </div>
         </div>
         <div class="flex-item">
@@ -45,7 +59,10 @@
     export default {
         data() {
             return {
-                perlin: {},
+                noise: {
+                    grid: [],
+                    pixels: []
+                },
                 gridNumberOptions: {
                     1: {id: 1, val: 4},
                     2: {id: 2, val: 8},
@@ -53,40 +70,66 @@
                     4: {id: 4, val: 32},
                     5: {id: 5, val: 64},
                 },
+                scalar: 1,
                 numberOfGrids: 4,
                 numberOfPixels: 512,
                 vueCanvas: {},
                 pixelData: {},
                 fileName: '',
-                fileNameWarning: ' * '
-            }
-        },
-        watch: {
-            numberOfGrids: function(value) {
-                // If "pageData" ever changes, then we will console log its new value.
-                console.log(value);
-                this.seed(value);
-                this.getPerlinNoise();
+                fileNameWarning: ' * ',
+                colors: [
+                    {
+                        value: '#000000',
+                        r: 0,
+                        g: 0,
+                        b: 0
+                    },
+                    {
+                        value: '#ffffff',
+                        r: 255,
+                        g: 255,
+                        b: 255
+                    }
+                ]
             }
         },
         mounted() {
-            this.perlin = new Perlin(this.numberOfGrids, this.numberOfPixels)
             var mainCanvas = document.getElementById("main-canvas");
-            console.log(mainCanvas)
             var ctx = mainCanvas.getContext("2d");    
             this.vueCanvas = ctx;
             this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
-            console.log(this.pixelData)
-            this.getPerlinNoise();
+            this.resetGrid();
+        },
+        watch: {
+            numberOfGrids: function(value) {
+                this.resetGrid();
+            }
+        },
+        computed: {
+            numberOfColors: function() {
+                return this.colors.length;
+            }
         },
         methods: {
-            seed: function() {
-                console.log('click')
-                this.perlin.seed(this.numberOfGrids);
-                this.getPerlinNoise();
+            resetGrid: function () {
+                perlin.makeGrid(this.numberOfGrids).then(data => {
+                    this.noise.grid = data;
+                    perlin.makeNoise(data, this.scalar, this.numberOfPixels).then(data => {
+                        this.noise.data = data;
+                        this.setPixelData();
+                    })
+                })
             },
+
+            resetNoise: function() {
+                console.log('click')
+                perlin.makeNoise(this.noise.grid, this.scalar, this.numberOfPixels).then(data => {
+                    this.noise.data = data;
+                    this.setPixelData();
+                })
+            },
+
             download: function() {
-                console.log('download');
                 if (this.fileName === '') {
                     this.fileNameWarning = ' * File name is required.';
                     return;
@@ -100,42 +143,50 @@
                 link.click();
             },
 
-            hslToRgb: function(hue, sat, light) {
-                hue = hue % 360;
-
-                if (hue < 0) {
-                    hue += 360;
-                }
-
-                sat /= 100;
-                light /= 100;
-
-                function f(n) {
-                    let k = (n + hue / 30) % 12;
-                    let a = sat * Math.min(light, 1 - light);
-                    return light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-                }
-
-                return [f(0) * 255, f(8) * 255, f(4) * 255];
+            changeColor: function(event) {
+                let index = event.target.id.split('-')[1]
+                let value = event.target.value
+                this.colors[index].value = value;
+                let rgb = utils.hexToRgb(value)
+                this.colors[index].r = rgb[0];
+                this.colors[index].g = rgb[1];
+                this.colors[index].b = rgb[2];
+                this.setPixelData();
             },
-            getPerlinNoise: function() {
-                const gridSize = this.numberOfPixels / this.numberOfGrids;
-                for (let x = 0; x < this.numberOfPixels; x++){
-                    for (let y = 0; y < this.numberOfPixels; y++){
-                        let value = (this.perlin.get(x / gridSize, y / gridSize) + 1 / 2);
-                        let rgbColor = this.hslToRgb(value * 240 + 20, 100, 50)
-                        let redEffect = .4
-                        let greenEffect = .99
-                        let blueEffect = .4
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = (.3 * (1 - value ) + .7) * redEffect * 255;
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = value * greenEffect * 255;
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = (.5 * (1 - value) + .5) * blueEffect * 255;
-                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = rgbColor[0];
-                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = rgbColor[1];
-                        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = rgbColor[2];
-                        this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
-                    
+
+            updateNumberOfColors: function(event) {
+                let value = event.target.value;
+                if (value < this.colors.length) {
+                    this.colors = this.colors.slice(0, value)
+                }
+                if(value > this.colors.length) {
+                    for (let i=0; i <= value - this.colors.length; i++) {
+                        this.colors.push({
+                            value: '#ffffff',
+                            r: 255,
+                            g: 255,
+                            b: 255
+                        })
                     }
+                }
+                this.setPixelData();
+            },
+
+            setPixelData: function() {
+                for (let i=0; i<this.noise.data.length; i++) {
+                    let x = this.noise.data[i].x;
+                    let y = this.noise.data[i].y;
+                    let value = this.noise.data[i].scaledValue;
+                    let band = utils.clamp(Math.floor((this.colors.length - 1) * value), 0, this.colors.length - 2);
+                    let bandWidth = 1 / (this.colors.length - 1)
+                    let mappedValue = utils.mapNumberRange(value, band * bandWidth, (band + 1) * bandWidth, 0, 1);
+                    let r = utils.linearInterpolate(this.colors[band].r, this.colors[band + 1].r, mappedValue);
+                    let g = utils.linearInterpolate(this.colors[band].g, this.colors[band + 1].g, mappedValue);
+                    let b = utils.linearInterpolate(this.colors[band].b, this.colors[band + 1].b, mappedValue);
+                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = r;
+                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = g;
+                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = b;
+                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
                 }
                 this.vueCanvas.putImageData(this.pixelData, 0, 0);
             }
