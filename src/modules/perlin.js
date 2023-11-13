@@ -1,10 +1,18 @@
 import * as utils from './utils.js'
 
-const makeGrid = async (num) => {
+//https://github.com/joeiddon/perlin/tree/master -->
+//https://rtouti.github.io/graphics/perlin-noise-algorithm -->
+//https://adrianb.io/2014/08/09/perlinnoise.html -->
+//https://sighack.com/post/getting-creative-with-perlin-noise-fields -->
+//https://gamedev.stackexchange.com/questions/197861/how-to-handle-octave-frequency-in-the-perlin-noise-algorithm -->
+///https://thebookofshaders.com/13/ -->
+//https://stackoverflow.com/questions/17427461/perlin-noise-value-range -->
+
+const makeGrid = async (n) => {
     let yArray = [];
-    for (let i=0; i<num; i++) {
+    for (let i=0; i<n; i++) {
         let xArray = [];
-        for (let j=0; j<num; j++) {
+        for (let j=0; j<n; j++) {
             xArray.push({
                 x: j,
                 y: i,
@@ -25,38 +33,35 @@ const randomUnitVector = () => {
     };
 }
 
-const makeNoise = async (gridData, scalar, numberOfPixels) => {
+const getCornerGradients = (gridData, baseFrequency, binSize, bin, xIncrement, yIncrement) => {
+    return gridData[((bin[0] + xIncrement)  % baseFrequency) * binSize][((bin[1] + yIncrement) % baseFrequency) * binSize].gradient
+}
+
+const makeNoise = async (gridData, gridSize, baseFrequency, octaves, scalar, numberOfPixels) => {
+    console.log('here')
     const noise = [];
-    //const numberOfGrids = Math.round(Math.sqrt(gridData.length))
-    const numberOfGrids = gridData[0].lengthq
-    const gridSize = numberOfPixels / numberOfGrids;
+    const binSize = gridSize / baseFrequency;
     for (let y = 0; y < numberOfPixels; y++){
-        let yGrid = y / gridSize;
+        let yMapped = utils.mapNumberRange(y, 0, numberOfPixels, 0, baseFrequency);
         for (let x = 0; x < numberOfPixels; x++) {
-            let xGrid = x / gridSize;
-            let tlGradient = {
-                x: gridData[Math.floor(yGrid) % numberOfGrids][Math.floor(xGrid) % numberOfGrids].gradient.x * scalar,
-                y: gridData[Math.floor(yGrid) % numberOfGrids][Math.floor(xGrid) % numberOfGrids].gradient.y * scalar,
+            let frequency = baseFrequency;
+            let value = 0;
+            for (let i = 0; i < octaves; i++) {
+                frequency *= 2;
+                let xMapped = utils.mapNumberRange(x, 0, numberOfPixels, 0, frequency);
+                let bin = [Math.floor(xMapped), Math.floor(yMapped)];
+                let tlGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 0)
+                let trGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 0)
+                let blGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 1)
+                let brGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 1)
+                //console.log('MAKE NOISE: ', xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient)
+                value += utils.clamp(getValue(xMapped, yMapped, bin, tlGradient, trGradient, blGradient, brGradient), -1, 1);
             }
-            let trGradient = {
-                x: gridData[Math.floor(yGrid) % numberOfGrids][(Math.floor(xGrid) + 1) % numberOfGrids].gradient.x * scalar,
-                y: gridData[Math.floor(yGrid) % numberOfGrids][(Math.floor(xGrid) + 1) % numberOfGrids].gradient.y * scalar,
-            }
-            let blGradient = {
-                x: gridData[(Math.floor(yGrid) + 1) % numberOfGrids][Math.floor(xGrid) % numberOfGrids].gradient.x * scalar,
-                y: gridData[(Math.floor(yGrid) + 1) % numberOfGrids][Math.floor(xGrid) % numberOfGrids].gradient.y * scalar,
-            }
-            let brGradient = {
-                x: gridData[(Math.floor(yGrid) + 1) % numberOfGrids][(Math.floor(xGrid) + 1) % numberOfGrids].gradient.x * scalar,
-                y: gridData[(Math.floor(yGrid) + 1) % numberOfGrids][(Math.floor(xGrid) + 1) % numberOfGrids].gradient.y * scalar,
-            }
-            //console.log('MAKE NOISE: ', xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient)
-            let value = utils.clamp(getValue(xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient), -1, 1);
             noise.push({
                 x: x,
                 y: y,
                 value: value,
-                scaledValue: (value + 1) / 2
+                scaledValue: utils.mapNumberRange(value, -1, 1, 0, 1)
             })
         }
     }
@@ -76,19 +81,14 @@ const interpolate = (x, a, b) => {
     return a + smootherstep(x) * (b-a);
 }
 
-const getValue = (x, y, tlGradient, trGradient, blGradient, brGradient) => {
-    let xFloor = Math.floor(x);
-    let yFloor = Math.floor(y);
-    let xCeil = xFloor + 1;
-    let yCeil = yFloor + 1;
-    //interpolate
-    let topLeft = dotProductGrid(x, y, xFloor, yFloor, tlGradient);
-    let topRight = dotProductGrid(x, y, xCeil, yFloor, trGradient);
-    let bottomLeft = dotProductGrid(x, y, xFloor, yCeil, blGradient);
-    let bottomRight = dotProductGrid(x, y, xCeil, yCeil, brGradient);
-    let xTop = interpolate(x - xFloor, topLeft, topRight);
-    let xBottom = interpolate(x - xFloor, bottomLeft, bottomRight);
-    let value = interpolate(y - yFloor, xTop, xBottom);
+const getValue = (x, y, bin, tlGradient, trGradient, blGradient, brGradient) => {
+    let topLeft = dotProductGrid(x, y, bin[0], bin[1], tlGradient);
+    let topRight = dotProductGrid(x, y, bin[0] + 1, bin[1], trGradient);
+    let bottomLeft = dotProductGrid(x, y, bin[0], bin[1] + 1, blGradient);
+    let bottomRight = dotProductGrid(x, y, bin[0] + 1, bin[1] + 1, brGradient);
+    let xTop = interpolate(x - bin[0], topLeft, topRight);
+    let xBottom = interpolate(x - bin[0], bottomLeft, bottomRight);
+    let value = interpolate(y - bin[1], xTop, xBottom);
     return value;
 }
 
