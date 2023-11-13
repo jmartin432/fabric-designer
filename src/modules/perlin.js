@@ -27,8 +27,7 @@ const randomUnitVector = () => {
 
 const makeNoise = async (gridData, scalar, numberOfPixels) => {
     const noise = [];
-    //const numberOfGrids = Math.round(Math.sqrt(gridData.length))
-    const numberOfGrids = gridData[0].lengthq
+    const numberOfGrids = Math.round(Math.sqrt(gridData.length))
     const gridSize = numberOfPixels / numberOfGrids;
     for (let y = 0; y < numberOfPixels; y++){
         let yGrid = y / gridSize;

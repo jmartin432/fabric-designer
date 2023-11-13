@@ -7,8 +7,6 @@
 <!-- https://rtouti.github.io/graphics/perlin-noise-algorithm -->
 <!-- https://adrianb.io/2014/08/09/perlinnoise.html -->
 <!-- https://sighack.com/post/getting-creative-with-perlin-noise-fields -->
-<!-- https://gamedev.stackexchange.com/questions/197861/how-to-handle-octave-frequency-in-the-perlin-noise-algorithm -->
-<!-- https://thebookofshaders.com/13/ -->
 <template>
     <div id="container">
         <div id="canvas-container" class="flex-item">
@@ -18,7 +16,7 @@
             <button  class="control-item" @click="resetGrid">Reseed</button>
             <div class="control-item">
                 <label for="grid-size">Grid Size</label>
-                <select name="grid-size" id="grid-size-selector" class="number-select" v-model="numberOfGrids">
+                <select name="grid-size" id="grid-size-selector" v-model="numberOfGrids">
                     <option v-for="item in gridNumberOptions" :value="item.val" :key="item.id">
                         {{ item.val }}
                     </option>
@@ -26,7 +24,7 @@
             </div>
             <div class="control-item">
                 <label for="number-of-colors">Number of Colors</label>
-                <select name="number-of-colors" id="number-of-colors" class="number-select" :value="colors.length" @change="updateNumberOfColors">
+                <select name="number-of-colors" id="number-of-colors" :value="colors.length" @change="updateNumberOfColors">
                     <option v-for="index in 10" :value="index + 1" :key="index + 1">
                         {{ index + 1 }}
                     </option>
@@ -71,8 +69,6 @@
                     3: {id: 3, val: 16},
                     4: {id: 4, val: 32},
                     5: {id: 5, val: 64},
-                    6: {id: 6, val: 128},
-                    7: {id: 7, val: 256},
                 },
                 scalar: 1,
                 numberOfGrids: 4,
@@ -219,5 +215,9 @@
 
     .control-item {
         margin-bottom: 10px;
+    }
+
+    #grid-size-selector {
+        width: 70px;
     }
 </style>
