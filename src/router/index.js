@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AboutView from '../views/AboutView.vue'
+import PerlinNoiseView from '../views/PerlinNoiseView.vue'
 
 const router = createRouter({
   scrollBehavior(to, from, savedPosition) {
@@ -16,10 +17,8 @@ const router = createRouter({
     {
       path: '/perlin-noise',
       name: 'perlin-noise',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/PerlinNoiseView.vue')
+      
+      component: PerlinNoiseView.vue
     }
   ]
 })
