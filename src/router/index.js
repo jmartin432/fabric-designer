@@ -18,7 +18,7 @@ const router = createRouter({
       path: '/perlin-noise',
       name: 'perlin-noise',
       
-      component: PerlinNoiseView.vue
+      component: PerlinNoiseView
     }
   ]
 })

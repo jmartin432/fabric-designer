@@ -10,7 +10,8 @@
             </div>
         <div id="display-container">
             <div id="canvas-container" class="flex-item">
-                <canvas id="main-canvas" :width="numberOfPixels" :height="numberOfPixels"></canvas>
+                <!-- This is why the canvas goes blank on pixel change -->
+                <canvas id="main-canvas" :width="canvasWidth" :height="canvasWidth"></canvas>
             </div>
             <div class="flex-item">
                 <button  class="control-item" @click="resetGrid">Reseed</button>
@@ -39,9 +40,20 @@
             </div>
             <div class="flex-item">
                 <div class="control-item">
-                    <div class="input-label">
-                        <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
-                    </div>
+                    <label for="inches-input">Inches</label>
+                    <input type="number" id="inches-input" name="inches-input" min="1" max="12" step=".5" v-model="inches">
+                </div>
+                <div class="control-item">
+                    <label for="dpi-input">DPI</label>
+                    <select name="dpi-input" id="dpi-input" class="number-select" v-model="dpi">
+                        <option v-for="item in dpiOptions" :value="item.val" :key="item.id">
+                            {{ item.val }}
+                        </option>
+                    </select>
+                </div>
+                <p>Pixels: {{ numberOfPixels }}</p>
+                <div class="control-item">
+                    <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
                     <input 
                         required 
                         type="text" 
@@ -72,12 +84,20 @@
                     //6: {id: 6, val: 128},
                     //7: {id: 7, val: 256},
                 },
+                dpiOptions: {
+                    1: {id: 96, val: 96},
+                    2: {id: 150, val: 150},
+                    3: {id: 200, val: 200},
+                    4: {id: 300, val: 300}
+                },
                 message: 'Calculating...',
                 showMessage: false,
                 scalar: 1,
                 baseFrequency: 4,
                 octaves: 1,
-                numberOfPixels: 512,
+                dpi: 96,
+                inches: 4,
+                canvasWidth: 384,
                 vueCanvas: {},
                 pixelData: {},
                 fileName: '',
@@ -102,30 +122,34 @@
             var mainCanvas = document.getElementById("main-canvas");
             var ctx = mainCanvas.getContext("2d");    
             this.vueCanvas = ctx;
-            this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
+            // this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
             this.resetGrid();
         },
         watch: {
             baseFrequency: function() {
+                this.resetNoise();
+            },
+            numberOfPixels: function() {
                 this.resetNoise();
             }
         },
         computed: {
             numberOfColors: function() {
                 return this.colors.length;
+            },
+            numberOfPixels: function() {
+                return this.inches * this.dpi;
             }
         },
         methods: {
             resetGrid: function () {
                 console.log('RESETTING GRID!')
                 this.showMessage = true;
-                console.log(this.showMessage)
                 this.showHideMessage(true)
-                setTimeout( () => {
+                setTimeout(() => {
                     return perlin.makeGrid(this.gridSize)
                     .then(data => {
                         this.grid = data;
-                        console.log('THIS DATA: ', data)
                         return perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
                     })
                     .then(data => {
@@ -135,9 +159,11 @@
                     .then(() => {
                         this.setPixelData();
                     })
+                    .then(() => {
+                        this.updateCanvas()
+                    })
                     .finally(() => {
                         this.showHideMessage(false)
-                        console.log(this.showMessage)
                     })
                 }, 10);
             },
@@ -145,9 +171,8 @@
             resetNoise: function() {
                 console.log('RESETTING NOISE!')
                 this.showMessage = true;
-                console.log(this.showMessage);
                 this.showHideMessage(true) 
-                setTimeout( () => {
+                setTimeout(() => {
                     perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
                     .then(data => {
                         this.noise = data;
@@ -156,15 +181,26 @@
                     .then(() => {
                         this.setPixelData();
                     })
+                    .then(() => {
+                        this.updateCanvas()
+                    })
                     .finally(() => {
                         this.showHideMessage(false);
-                        console.log(this.showMessage)
                     })
                 }, 10);
             },
 
             showHideMessage: async function(value) {
                 this.showMessage = value
+            },
+
+            updateCanvas: async function() {
+                await this.setCanvasSize();
+                this.vueCanvas.putImageData(this.pixelData, 0, 0);
+            },
+
+            setCanvasSize: async function() {
+                this.canvasWidth = this.numberOfPixels;
             },
 
             download: function() {
@@ -223,6 +259,7 @@
             },
 
             setPixelData: async function() {
+                this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
                 for (let i=0; i<this.noise.values.length; i++) {
                     let x = this.noise.values[i].x;
                     let y = this.noise.values[i].y;
@@ -238,7 +275,6 @@
                     this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = b;
                     this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
                 }
-                this.vueCanvas.putImageData(this.pixelData, 0, 0);
             }
         }
     }
