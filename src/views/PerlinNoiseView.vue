@@ -228,6 +228,9 @@
                 this.showHideMessage(true) 
                 setTimeout( () => {
                     this.setPixelData()
+                    .then(() => {
+                        this.updateCanvas()
+                    })
                     .finally(() => {
                         this.showHideMessage(false);
                     })
@@ -252,6 +255,9 @@
                 this.showHideMessage(true) 
                 setTimeout( () => {
                     this.setPixelData()
+                    .then(() => {
+                        this.updateCanvas()
+                    })
                     .finally(() => {
                         this.showHideMessage(false);
                     })
