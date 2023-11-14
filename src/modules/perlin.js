@@ -33,39 +33,55 @@ const randomUnitVector = () => {
     };
 }
 
-const getCornerGradients = (gridData, baseFrequency, binSize, bin, xIncrement, yIncrement) => {
-    return gridData[((bin[0] + xIncrement)  % baseFrequency) * binSize][((bin[1] + yIncrement) % baseFrequency) * binSize].gradient
+const getCornerGradients = (gridData, frequency, binSize, bin, xIncrement, yIncrement) => {
+    let x = ((bin[0] + xIncrement)  % frequency) * binSize;
+    let y = ((bin[1] + yIncrement) % frequency) * binSize;
+    //console.log(' GET CORNERS: ', x, y)
+    return gridData[x][y].gradient
 }
 
 const makeNoise = async (gridData, gridSize, baseFrequency, octaves, scalar, numberOfPixels) => {
-    console.log('here')
+    console.log('here');
+    let min = 0;
+    let max = 0;
     const noise = [];
-    const binSize = gridSize / baseFrequency;
     for (let y = 0; y < numberOfPixels; y++){
-        let yMapped = utils.mapNumberRange(y, 0, numberOfPixels, 0, baseFrequency);
         for (let x = 0; x < numberOfPixels; x++) {
             let frequency = baseFrequency;
             let value = 0;
             for (let i = 0; i < octaves; i++) {
-                frequency *= 2;
+                let binSize = gridSize / baseFrequency;
+                //console.log('bin Size', binSize)
                 let xMapped = utils.mapNumberRange(x, 0, numberOfPixels, 0, frequency);
+                let yMapped = utils.mapNumberRange(y, 0, numberOfPixels, 0, frequency);
                 let bin = [Math.floor(xMapped), Math.floor(yMapped)];
+               // console.log(xMapped, yMapped, bin)
                 let tlGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 0)
                 let trGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 0)
                 let blGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 1)
                 let brGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 1)
                 //console.log('MAKE NOISE: ', xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient)
                 value += utils.clamp(getValue(xMapped, yMapped, bin, tlGradient, trGradient, blGradient, brGradient), -1, 1);
+                frequency *= 2;
             }
+            min = Math.min(value, min)
+            max = Math.max(value, max)
             noise.push({
                 x: x,
                 y: y,
                 value: value,
-                scaledValue: utils.mapNumberRange(value, -1, 1, 0, 1)
+                //scaledValue: utils.mapNumberRange(value, -1, 1, 0, 1)
             })
         }
     }
-    return noise;
+    noise.forEach((item) => item.scaledValue = utils.mapNumberRange(item.value, min, max, 0, 1))
+    return {
+        min: min,
+        max: max,
+        scaledMin: utils.mapNumberRange(min, min, max, 0, 1),
+        scaledMax: utils.mapNumberRange(max, min, max, 0, 1),
+        values: noise
+    }
 }
 
 const dotProductGrid = (x, y, xCorner, yCorner, gradientVector) => {
