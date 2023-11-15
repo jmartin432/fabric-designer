@@ -50,7 +50,7 @@
         position: absolute;
         top: 5%;
         left: 5%;
-        border: 1px solid black;
+        border: 1px solid #CBD175;
         border-radius: 10px;
         width: 90%;
         height: 90%;
