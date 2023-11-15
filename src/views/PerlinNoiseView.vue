@@ -1,6 +1,7 @@
 <script setup>
     import * as perlinUtils from '../modules/perlinUtils.js';
     import * as utils from '../modules/utils';
+    import TilingModal from '../components/TilingModal.vue'
 </script>
 
 <template>
@@ -46,7 +47,8 @@
             </div>
             <div class="flex-item">
                 <canvas id="download-canvas" :width="downloadCanvasWidth" :height="downloadCanvasWidth"></canvas>
-                <button class="control-item" @click="handlePrepareDownlaodClick">Prepare Download</button>
+                <button class="control-item" @click="handleShowTilingModal">Show Tiling</button>
+                <button class="control-item" @click="handlePrepareDownloadClick">Prepare Download</button>
                 <Transition name="show-download">
                     <div v-if="showDownloadDialogue" id="download-dialogue">
                         <div class="control-item">
@@ -78,6 +80,7 @@
             </div>
         </div>
     </div>
+    <TilingModal :show="showTilingModal" :background="modalBackground" @close-modal="(n) => { console.log(m); showTilingModal = n}"/>
 </template>
 
 <script>
@@ -137,7 +140,9 @@
                         g: 255,
                         b: 255
                     }
-                ]
+                ],
+                showTilingModal: false,
+                modalBackground: ''
             }
         },
         async mounted() {
@@ -195,10 +200,10 @@
                 if(value > this.colors.length) {
                     for (let i=this.colors.length; i < value; i++) {
                         this.colors.push({
-                            value: '#ffffff',
-                            r: 255,
-                            g: 255,
-                            b: 255
+                            value: (i % 2 === 1) ? '#ffffff' : '#000000',
+                            r: (i % 2 === 1) ? 255 : 0,
+                            g: (i % 2 === 1) ? 255 : 0,
+                            b: (i % 2 === 1) ? 255 : 0
                         })
                     }
                 }
@@ -303,8 +308,14 @@
                 // }, 10);
             },
 
-            handlePrepareDownlaodClick: function() {
+            handlePrepareDownloadClick: function() {
                 this.showDownloadDialogue = true;
+            },
+
+            handleShowTilingModal: function() {
+                this.modalBackground = this.makeFile('main-canvas')
+                console.log(this.modalBackground)
+                this.showTilingModal = true;
             },
 
             handleDownloadClick: function() {
@@ -315,12 +326,17 @@
                 this.makeNoise(this.noiseMaker, 'download-canvas')
             },
 
-            download: function() {
-                let canvas = document.getElementById("download-canvas");
-                let image = canvas.toDataURL('image/png');
-                image = image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream');
-                var link = document.createElement('a');
+            makeFile: function(fromCanvas) {
+                let canvas = document.getElementById(fromCanvas);
+                return canvas.toDataURL('image/png');
+            },
+
+            download: function() {   
+                const image = this.makeFile('download-canvas')
+                image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream')
+                let link = document.createElement('a');
                 link.download = this.fileName + '.png';
+                console.log(link.download)
                 link.href = image;
                 link.click();
                 this.resetDownloadDialogue();
@@ -350,20 +366,22 @@
     }
 
     #message {
-        transition: opacity 1s linear;
         color: white;
     }
 
     #message.hide {
+        transition: opacity 1s linear 1.5s;
         opacity: 0;
     }
 
     #message.show {
+        transition: opacity 1s linear;
         opacity: 1;
     }
 
     #main-canvas {
-        border: 1px solid black;
+        border: 1px solid #CBD175;
+        border-radius: 10px;
         width: 512px;
         height: 512px;
     }

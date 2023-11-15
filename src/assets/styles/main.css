@@ -85,6 +85,7 @@ input[type='range']{
   background-color: lightgray;
   border: none;
   cursor: pointer;
+  transition-duration: 0.4s;
 }
 
 input[type='range']::-webkit-slider-thumb{
@@ -96,6 +97,12 @@ input[type='range']::-webkit-slider-thumb{
   background: #D0A9CD;
   border: 1px solid #AC68A7;
   cursor: pointer;
+  transition-duration: 0.4s;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  box-shadow: 5px 5px 10px #AC68A777, -5px -5px 10px #AC68A777, -5px 5px 10px #AC68A777,5px -5px 10px #AC68A777;
+  cursor: pointer;
 }
 
 button {
@@ -106,7 +113,7 @@ button {
     padding: 5px 10px;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
+    display: block;
     font-size: .8rem;
     transition-duration: 0.4s;
     font-family: "Open sans";
