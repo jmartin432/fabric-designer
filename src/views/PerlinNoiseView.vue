@@ -1,5 +1,5 @@
 <script setup>
-    import * as perlin from '../modules/perlin.js';
+    import * as perlinUtils from '../modules/perlinUtils.js';
     import * as utils from '../modules/utils';
 </script>
 
@@ -11,10 +11,10 @@
         <div id="display-container">
             <div id="canvas-container" class="flex-item">
                 <!-- This is why the canvas goes blank on pixel change -->
-                <canvas id="main-canvas" :width="canvasWidth" :height="canvasWidth"></canvas>
+                <canvas id="main-canvas" :width="mainCanvasWidth" :height="mainCanvasWidth"></canvas>
             </div>
             <div class="flex-item">
-                <button  class="control-item" @click="resetGrid">Reseed</button>
+                <button  class="control-item" @click="handleResetGrid">Reset Grid</button>
                 <div class="control-item">
                     <label for="grid-size">Base Frequency</label>
                     <select name="grid-size" id="grid-size-selector" class="number-select" v-model="baseFrequency">
@@ -23,9 +23,15 @@
                         </option>
                     </select>
                 </div>
+                <div>
+                    <div class="control-item">
+                        <label for="gradient-scalar-input">Gradient Scalar: {{ scalar }}</label>
+                        <input type="range" id="gradient-scalar--input" name="gradient-scalar-input" min=".1" max="9.9" step=".1" v-model="scalar" @change="handleScalarChange">
+                    </div>
+                </div>
                 <div class="control-item">
                     <label for="number-of-colors">Number of Colors</label>
-                    <select name="number-of-colors" id="number-of-colors" class="number-select" :value="colors.length" @change="updateNumberOfColors">
+                    <select name="number-of-colors" id="number-of-colors" class="number-select" v-model="numberOfColors" @change="handleNumberOfColorsChange">
                         <option v-for="index in 10" :value="index + 1" :key="index + 1">
                             {{ index + 1 }}
                         </option>
@@ -34,35 +40,41 @@
                 <div id="color=pickers">
                     <div v-for="(item, index) in colors" :key=index class="control-item">
                         <label for="head">Color {{ index }}</label>
-                        <input type="color" :id="'color-' + index" :name="'color-' + index" v-model="colors[index].value" @input="changeColor"/>
+                        <input type="color" :id="'color-' + index" :name="'color-' + index" v-model="colors[index].value" @input="handleColorChange"/>
                     </div>
                 </div>
             </div>
             <div class="flex-item">
-                <div class="control-item">
-                    <label for="inches-input">Inches</label>
-                    <input type="number" id="inches-input" name="inches-input" min="1" max="12" step=".5" v-model="inches">
-                </div>
-                <div class="control-item">
-                    <label for="dpi-input">DPI</label>
-                    <select name="dpi-input" id="dpi-input" class="number-select" v-model="dpi">
-                        <option v-for="item in dpiOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
-                        </option>
-                    </select>
-                </div>
-                <p>Pixels: {{ numberOfPixels }}</p>
-                <div class="control-item">
-                    <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
-                    <input 
-                        required 
-                        type="text" 
-                        id="file-name-input" 
-                        placeholder="File Name" 
-                        v-model="fileName"
-                    />
-                </div>
-                <button class="control-item" @click="download">Download</button>
+                <canvas id="download-canvas" :width="downloadCanvasWidth" :height="downloadCanvasWidth"></canvas>
+                <button class="control-item" @click="handlePrepareDownlaodClick">Prepare Download</button>
+                <Transition name="show-download">
+                    <div v-if="showDownloadDialogue" id="download-dialogue">
+                        <div class="control-item">
+                            <label for="inches-input">Inches</label>
+                            <input type="number" id="inches-input" name="inches-input" min="1" max="12" step=".5" v-model="downloadInches">
+                        </div>
+                        <div class="control-item">
+                            <label for="dpi-input">DPI</label>
+                            <select name="dpi-input" id="dpi-input" class="number-select" v-model="downloadDpi">
+                                <option v-for="item in dpiOptions" :value="item.val" :key="item.id">
+                                    {{ item.val }}
+                                </option>
+                            </select>
+                        </div>
+                        <p>Pixels: {{ downloadCanvasWidth }}</p>
+                        <div class="control-item">
+                            <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
+                            <input 
+                                required 
+                                type="text" 
+                                id="file-name-input" 
+                                placeholder="File Name" 
+                                v-model="fileName"
+                            />
+                        </div>
+                        <button class="control-item" @click="handleDownloadClick">Download</button>
+                    </div>
+                </Transition>
             </div>
         </div>
     </div>
@@ -72,9 +84,21 @@
     export default {
         data() {
             return {
-                grid: [],
-                noise: {},
+                mainCanvas: {},
+                mainCanvasWidth: 512,
+                downloadCanvas: {},
+                downloadDpi: 96,
+                downloadInches: 4,
+                downloadCanvasWidth: 384,
+                noiseMaker: {},
+                waitingForNoise: false,
+                pixelMaker: {},
+                waitingForPixels: false,
                 gridSize: 256,
+                grid: [],
+                mainNoise: {},
+                downloadNoise: {},
+                baseFrequency: 4,
                 baseFrequencyOptions: {
                     1: {id: 1, val: 4},
                     2: {id: 2, val: 8},
@@ -84,22 +108,20 @@
                     //6: {id: 6, val: 128},
                     //7: {id: 7, val: 256},
                 },
+                octaves: 1,
+                scalar: 1,
+                numberOfColors: 2,
+                message: 'Standing By...',
+                showMessage: true,
+                //mainPixelData: {},
+                showDownloadDialogue: false,
                 dpiOptions: {
                     1: {id: 96, val: 96},
                     2: {id: 150, val: 150},
                     3: {id: 200, val: 200},
                     4: {id: 300, val: 300}
                 },
-                message: 'Calculating...',
-                showMessage: false,
-                scalar: 1,
-                baseFrequency: 4,
-                octaves: 1,
-                dpi: 96,
-                inches: 4,
-                canvasWidth: 384,
-                vueCanvas: {},
-                pixelData: {},
+                //downloadPixelData: {},
                 fileName: '',
                 fileNameWarning: ' * ',
                 colors: [
@@ -118,132 +140,60 @@
                 ]
             }
         },
-        mounted() {
-            var mainCanvas = document.getElementById("main-canvas");
-            var ctx = mainCanvas.getContext("2d");    
-            this.vueCanvas = ctx;
-            // this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
-            this.resetGrid();
+        async mounted() {
+            let c1 = document.getElementById("main-canvas");
+            let ctx1 = c1.getContext("2d");    
+            this.mainCanvas = ctx1;
+            let c2 = document.getElementById("download-canvas");
+            let ctx2 = c2.getContext("2d");
+            this.downloadCanvas = ctx2;
+
+            this.noiseMaker = new Worker('perlinNoiseMaker.js')
+            this.pixelMaker = new Worker('pixelMaker.js')
+            this.noiseMaker.addEventListener("message", (message) => {
+                const type = message.data.type
+                if (type === 'percent') {
+                   // console.log("MAIN RECIEVED PERCENT MESSAGE FROM NOISEMAKER: ", message.data.data);
+                }
+                if (type === 'noise') {
+                    this.waitingForNoise = false;
+                    this.noise = JSON.parse(message.data.data);
+                    console.log("MAIN RECIEVED NOISE MESSAGE FROM NOISEMAKER FOR: ", message.data.forCanvas, this.noise.values.length);
+                    this.makePixels(this.pixelMaker, this.noise, message.data.forCanvas);
+                }
+            })
+            this.pixelMaker.addEventListener("message", (message) => {
+                const type = message.data.type
+                if (type === 'percent') {
+                  //  console.log("MAIN RECIEVED PERCENT MESSAGE FROM PIXELMAKER: ", message.data.data);
+                }
+                if (type === 'pixels') {
+                    this.waitingForPixels = false;
+                    this.message = 'Standing By...',
+                    this.showMessage = false;
+                    const pixels = JSON.parse(message.data.data);
+                    const Uint8Pixels = new Uint8ClampedArray(pixels.length);
+                    for (let i = 0; i < pixels.length; i++) {
+                        Uint8Pixels[i] = Math.round(pixels[i])
+                    }
+                    console.log("MAIN RECIEVED PIXELS MESSAGE FROM PIXELMAKER FOR: ", message.data.forCanvas, pixels.length);
+                    this.addPixelsToCanvas(Uint8Pixels, message.data.forCanvas);
+                }
+            })
+            await this.makeGrid();
+            this.makeNoise(this.noiseMaker, 'main-canvas');
         },
         watch: {
             baseFrequency: function() {
-                this.resetNoise();
+                this.makeNoise(this.noiseMaker, 'main-canvas');
             },
-            numberOfPixels: function() {
-                this.resetNoise();
-            }
-        },
-        computed: {
-            numberOfColors: function() {
-                return this.colors.length;
-            },
-            numberOfPixels: function() {
-                return this.inches * this.dpi;
-            }
-        },
-        methods: {
-            resetGrid: function () {
-                console.log('RESETTING GRID!')
-                this.showMessage = true;
-                this.showHideMessage(true)
-                setTimeout(() => {
-                    return perlin.makeGrid(this.gridSize)
-                    .then(data => {
-                        this.grid = data;
-                        return perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
-                    })
-                    .then(data => {
-                        this.noise = data;
-                        console.log(this.noise.min, this.noise.max, this.noise.scaledMin, this.noise.scaledMax, this.noise.values[10])
-                    })
-                    .then(() => {
-                        this.setPixelData();
-                    })
-                    .then(() => {
-                        this.updateCanvas()
-                    })
-                    .finally(() => {
-                        this.showHideMessage(false)
-                    })
-                }, 10);
-            },
-
-            resetNoise: function() {
-                console.log('RESETTING NOISE!')
-                this.showMessage = true;
-                this.showHideMessage(true) 
-                setTimeout(() => {
-                    perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
-                    .then(data => {
-                        this.noise = data;
-                        console.log(this.noise.min, this.noise.max, this.noise.scaledMin, this.noise.scaledMax, this.noise.values[10]);
-                    })
-                    .then(() => {
-                        this.setPixelData();
-                    })
-                    .then(() => {
-                        this.updateCanvas()
-                    })
-                    .finally(() => {
-                        this.showHideMessage(false);
-                    })
-                }, 10);
-            },
-
-            showHideMessage: async function(value) {
-                this.showMessage = value
-            },
-
-            updateCanvas: async function() {
-                await this.setCanvasSize();
-                this.vueCanvas.putImageData(this.pixelData, 0, 0);
-            },
-
-            setCanvasSize: async function() {
-                this.canvasWidth = this.numberOfPixels;
-            },
-
-            download: function() {
-                if (this.fileName === '') {
-                    this.fileNameWarning = ' * File name is required.';
-                    return;
-                }
-                let canvas = document.getElementById("main-canvas");
-                let image = canvas.toDataURL('image/png');
-                image = image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream');
-                var link = document.createElement('a');
-                link.download = this.fileName + '.png';
-                link.href = image;
-                link.click();
-            },
-
-            changeColor: async function(event) {
-                let index = event.target.id.split('-')[1]
-                let value = event.target.value
-                this.colors[index].value = value;
-                let rgb = utils.hexToRgb(value)
-                this.colors[index].r = rgb[0];
-                this.colors[index].g = rgb[1];
-                this.colors[index].b = rgb[2];
-                this.showHideMessage(true) 
-                setTimeout( () => {
-                    this.setPixelData()
-                    .then(() => {
-                        this.updateCanvas()
-                    })
-                    .finally(() => {
-                        this.showHideMessage(false);
-                    })
-                }, 10);
-            },
-
-            updateNumberOfColors: async function(event) {
-                let value = event.target.value;
+            numberOfColors: function(value) {
+                if (value === this.colors.length) return;
                 if (value < this.colors.length) {
                     this.colors = this.colors.slice(0, value)
                 }
                 if(value > this.colors.length) {
-                    for (let i=0; i <= value - this.colors.length; i++) {
+                    for (let i=this.colors.length; i < value; i++) {
                         this.colors.push({
                             value: '#ffffff',
                             r: 255,
@@ -252,36 +202,136 @@
                         })
                     }
                 }
-                this.showHideMessage(true) 
-                setTimeout( () => {
-                    this.setPixelData()
-                    .then(() => {
-                        this.updateCanvas()
-                    })
-                    .finally(() => {
-                        this.showHideMessage(false);
-                    })
-                }, 10);
+                console.log('NEW COLORS: ', this.colors);
+                this.makePixels(this.pixelMaker, this.noise, 'main-canvas')
+            },
+            downloadInches: function(value) {
+                this.downloadCanvasWidth = value * this.downloadDpi;
+            },
+            downloadDpi: function(value) {
+                this.downloadCanvasWidth = value * this.downloadInches;
+            }
+        },
+        computed: {},
+        methods: {
+            makeGrid: async function () {
+                console.log('CREATING GRID!')
+                this.grid = [];
+                // this.showMessage = true;
+                // this.showHideMessage(true)
+                this.grid = perlinUtils.makeGrid(this.gridSize);
             },
 
-            setPixelData: async function() {
-                this.pixelData = this.vueCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
-                for (let i=0; i<this.noise.values.length; i++) {
-                    let x = this.noise.values[i].x;
-                    let y = this.noise.values[i].y;
-                    let value = this.noise.values[i].scaledValue;
-                    let band = utils.clamp(Math.floor((this.colors.length - 1) * value), 0, this.colors.length - 2);
-                    let bandWidth = 1 / (this.colors.length - 1)
-                    let mappedValue = utils.mapNumberRange(value, band * bandWidth, (band + 1) * bandWidth, 0, 1);
-                    let r = utils.linearInterpolate(this.colors[band].r, this.colors[band + 1].r, mappedValue);
-                    let g = utils.linearInterpolate(this.colors[band].g, this.colors[band + 1].g, mappedValue);
-                    let b = utils.linearInterpolate(this.colors[band].b, this.colors[band + 1].b, mappedValue);
-                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = r;
-                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = g;
-                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = b;
-                    this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
+            makeNoise: function(noiseMaker, forCanvas) {
+                this.message = 'Making Noise...'
+                this.showMessage = true;
+                console.log('MAKING NOISE!')
+                const canvasWidth = (forCanvas === 'main-canvas') ? this.mainCanvasWidth : this.downloadCanvasWidth
+                noiseMaker.postMessage([JSON.stringify(this.grid), this.gridSize, this.baseFrequency, this.octaves, this.scalar, canvasWidth, forCanvas])
+                this.waitingForNoise = true;
+            },
+
+            handleResetGrid: async function() {
+                this.message = 'Resetting Grid...'
+                this.showMessage = true;
+                await this.makeGrid();
+                this.makeNoise(this.noiseMaker, 'main-canvas');
+            },
+
+            makePixels: function(pixelMaker, noise, forCanvas) {
+                this.message = 'Making Pixels...';
+                this.showMessage = true;
+                console.log('MAKING PIXELS!', pixelMaker, noise.values[0]);
+                pixelMaker.postMessage([JSON.stringify(noise), JSON.stringify(this.colors), forCanvas])
+                this.waitingForPixels = true;
+            },
+
+            showHideMessage: async function(value) {
+                this.showMessage = value
+            },
+
+            handleScalarChange: function() {
+                this.makeNoise(this.noiseMaker, 'main-canvas');
+            },
+
+            addPixelsToCanvas(pixels, forCanvas) {
+                console.log('ADDING PIXELS TO CANVAS: ', forCanvas);
+                if (forCanvas === 'main-canvas') {
+                    let imageData = this.mainCanvas.createImageData(this.mainCanvasWidth, this.mainCanvasWidth);
+                    imageData.data.set(pixels);
+                    this.mainCanvas.putImageData(imageData, 0, 0);
+                } else if (forCanvas === 'download-canvas') {
+                    console.log(this.downloadCanvasWidth);
+                    let imageData = this.downloadCanvas.createImageData(this.downloadCanvasWidth, this.downloadCanvasWidth);
+                    console.log(this.downloadCanvas)
+                    console.log(imageData.data.length)
+                    console.log(pixels.length)
+                    imageData.data.set(pixels);
+                    this.downloadCanvas.putImageData(imageData, 0, 0);
+                    this.download();
                 }
-            }
+
+                // console.log("IMAGE DATA: ", imageData);
+                // console.log('PIXELS: ', pixels);
+        
+                //imageData.data = pixels;
+            },
+
+            setCanvasSize: async function() {
+                this.canvasWidth = this.numberOfPixels;
+            },
+
+            handleColorChange: async function(event) {
+                let index = event.target.id.split('-')[1]
+                let value = event.target.value
+                this.colors[index].value = value;
+                let rgb = utils.hexToRgb(value)
+                this.colors[index].r = rgb[0];
+                this.colors[index].g = rgb[1];
+                this.colors[index].b = rgb[2];
+                this.showHideMessage(true) 
+                this.message = 'Making Pixels...'
+                this.makePixels(this.pixelMaker, this.noise, 'main-canvas')
+                // setTimeout( () => {
+                //     this.setPixelData()
+                //     .then(() => {
+                //         this.updateCanvas()
+                //     })
+                //     .finally(() => {
+                //         this.showHideMessage(false);
+                //     })
+                // }, 10);
+            },
+
+            handlePrepareDownlaodClick: function() {
+                this.showDownloadDialogue = true;
+            },
+
+            handleDownloadClick: function() {
+                if (this.fileName === '') {
+                    this.fileNameWarning = ' * File name is required.';
+                    return;
+                }
+                this.makeNoise(this.noiseMaker, 'download-canvas')
+            },
+
+            download: function() {
+                let canvas = document.getElementById("download-canvas");
+                let image = canvas.toDataURL('image/png');
+                image = image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream');
+                var link = document.createElement('a');
+                link.download = this.fileName + '.png';
+                link.href = image;
+                link.click();
+                this.resetDownloadDialogue();
+            },
+
+            resetDownloadDialogue: function() {
+                this.showDownloadDialogue = false;
+                this.downloadDpi = 96;
+                this.downloadInches = 4;
+                this.fileName = '';
+            },
         }
     }
 </script>
@@ -308,7 +358,6 @@
         opacity: 0;
     }
 
-
     #message.show {
         opacity: 1;
     }
@@ -318,13 +367,125 @@
         width: 512px;
         height: 512px;
     }
+
+    #download-canvas {
+        display: none;
+        width: 0;
+        height: 0;
+    }
     
     .flex-item {
         padding: .5rem 2rem;
         /* border: 1px solid red; */
     }
 
+    .show-download-enter-active {
+        transition: all 0.5s cubic-bezier(1, 0.5, 0.8, 1);
+    }
+
+    .show-download-leave-active {
+        transition: all 0.8s cubic-bezier(1, 0.5, 0.8, 1);
+    }
+
+    .show-download-enter-from,
+    .show-download-leave-to {
+        opacity: 0;
+    }
+
     .control-item {
         margin-bottom: 10px;
     }
 </style>
+
+
+<!-- //setTimeout(() => {
+    //     return perlin.makeGrid(this.gridSize)
+    //     .then(data => {
+    //         this.grid = data;
+    //         return perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
+    //     })
+    //     .then(data => {
+    //         this.noise = data;
+    //         console.log(this.noise.min, this.noise.max, this.noise.scaledMin, this.noise.scaledMax, this.noise.values[10])
+    //     })
+    //     .then(() => {
+    //         this.setPixelData();
+    //     })
+    //     .then(() => {
+    //         this.updateCanvas()
+    //     })
+    //     .finally(() => {
+    //         this.showHideMessage(false)
+    //     })
+    // }, 10); -->
+
+    <!-- //this.showHideMessage(true) 
+                // setTimeout(() => {
+                //     perlin.makeNoise(this.grid, this.gridSize, this.baseFrequency, this.octaves, this.scalar, this.numberOfPixels)
+                //     .then(data => {
+                //         this.noise = data;
+                //         console.log(this.noise.min, this.noise.max, this.noise.scaledMin, this.noise.scaledMax, this.noise.values[10]);
+                //     })
+                //     .then(() => {
+                //         this.setPixelData();
+                //     })
+                //     .then(() => {
+                //         this.updateCanvas()
+                //     })
+                //     .finally(() => {
+                //         this.showHideMessage(false);
+                //     })
+                // }, 10); -->
+
+                <!-- handleNumberOfColorsChange: async function(event) {
+                    let value = event.target.value;
+                    if (value === this.colors.length) return;
+                    if (value < this.colors.length) {
+                        this.colors = this.colors.slice(0, value)
+                    }
+                    if(value > this.colors.length) {
+                        for (let i=0; i <= value - this.colors.length; i++) {
+                            this.colors.push({
+                                value: '#ffffff',
+                                r: 255,
+                                g: 255,
+                                b: 255
+                            })
+                        }
+                    }
+                    this.showHideMessage(true) 
+                    setTimeout( () => {
+                        this.setPixelData()
+                        .then(() => {
+                            this.updateCanvas()
+                        })
+                        .finally(() => {
+                            this.showHideMessage(false);
+                        })
+                    }, 10);
+                }, -->
+
+                <!-- // setPixelData: async function() {
+                    //     this.pixelData = this.mainCanvas.createImageData(this.numberOfPixels, this.numberOfPixels);
+                    //     for (let i=0; i<this.noise.values.length; i++) {
+                    //         let x = this.noise.values[i].x;
+                    //         let y = this.noise.values[i].y;
+                    //         let value = this.noise.values[i].scaledValue;
+                    //         let band = utils.clamp(Math.floor((this.colors.length - 1) * value), 0, this.colors.length - 2);
+                    //         let bandWidth = 1 / (this.colors.length - 1)
+                    //         let mappedValue = utils.mapNumberRange(value, band * bandWidth, (band + 1) * bandWidth, 0, 1);
+                    //         let r = utils.linearInterpolate(this.colors[band].r, this.colors[band + 1].r, mappedValue);
+                    //         let g = utils.linearInterpolate(this.colors[band].g, this.colors[band + 1].g, mappedValue);
+                    //         let b = utils.linearInterpolate(this.colors[band].b, this.colors[band + 1].b, mappedValue);
+                    //         this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = r;
+                    //         this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = g;
+                    //         this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = b;
+                    //         this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
+                    //     }
+                    // }, -->
+
+                    <!-- // updateCanvas: async function() {
+                        //     await this.setCanvasSize();
+                        //     this.mainCanvas.putImageData(this.pixelData, 0, 0);
+                        // },
+             -->
