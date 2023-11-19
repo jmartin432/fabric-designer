@@ -7,7 +7,9 @@ onmessage = (e) => {
     const octaves = e.data[3];
     const scalar = e.data[4];
     const numberOfPixels = e.data[5];
-    const forCanvas = e.data[6]
+    const forCanvas = e.data[6];
+    const halfDrop = true;
+    const persistence = .7;
 
     console.log('WORKER IS STARTING NOISE.');
     const noise = {
@@ -21,19 +23,22 @@ onmessage = (e) => {
         for (let x = 0; x < numberOfPixels; x++) {
             let frequency = baseFrequency;
             let value = 0;
+            let amplitude = 1;
             for (let i = 0; i < octaves; i++) {
-                let binSize = gridSize / baseFrequency;
+                let binSize = gridSize / frequency;
                 //console.log('bin Size', binSize)
                 let xMapped = mapNumberRange(x, 0, numberOfPixels, 0, frequency);
                 let yMapped = mapNumberRange(y, 0, numberOfPixels, 0, frequency);
                 let bin = [Math.floor(xMapped), Math.floor(yMapped)];
                // console.log(xMapped, yMapped, bin)
-                let tlGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 0, scalar)
-                let trGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 0, scalar)
-                let blGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 1, scalar)
-                let brGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 1, scalar)
+                let tlGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 0, scalar, halfDrop)
+                let trGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 0, scalar, halfDrop)
+                let blGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 1, scalar, halfDrop)
+                let brGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 1, scalar, halfDrop)
                 //console.log('MAKE NOISE: ', xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient)
-                value += clamp(getValue(xMapped, yMapped, bin, tlGradient, trGradient, blGradient, brGradient), -1, 1);
+                value += amplitude * clamp(getValue(xMapped, yMapped, bin, tlGradient, trGradient, blGradient, brGradient), -1, 1);
+                amplitude *= persistence;
+                //console.log(i, amplitude, value)
                 frequency *= 2;
             }
             noise.min = Math.min(value, noise.min)
@@ -95,9 +100,12 @@ const getValue = (x, y, bin, tlGradient, trGradient, blGradient, brGradient) => 
     return value;
 }
 
-const getCornerGradients = (gridData, frequency, binSize, bin, xIncrement, yIncrement, scalar) => {
+const getCornerGradients = (gridData, frequency, binSize, bin, xIncrement, yIncrement, scalar, halfDrop) => {
+    const halfDropAdd = (halfDrop) ? frequency / 2 : 0;
     let x = ((bin[0] + xIncrement)  % frequency) * binSize;
-    let y = ((bin[1] + yIncrement) % frequency) * binSize;
+    let y = ((bin[0] + xIncrement) % frequency === 0) 
+        ? ((bin[1] + halfDropAdd + yIncrement) % frequency) * binSize
+        : ((bin[1] + yIncrement) % frequency) * binSize
     
     return {
         x: gridData[x][y].gradient.x * scalar,

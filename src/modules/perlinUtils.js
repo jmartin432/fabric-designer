@@ -6,6 +6,7 @@
 //https://gamedev.stackexchange.com/questions/197861/how-to-handle-octave-frequency-in-the-perlin-noise-algorithm -->
 ///https://thebookofshaders.com/13/ -->
 //https://stackoverflow.com/questions/17427461/perlin-noise-value-range -->
+//https://rmarcus.info/blog/2018/03/04/perlin-noise.html -->
 
 const makeGrid = (n) => {
     let yArray = [];

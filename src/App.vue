@@ -52,10 +52,10 @@ import { RouterLink, RouterView } from 'vue-router'
 <style scoped>
 
 header {
-  max-height: 100vh;
-  width: 100%;
-  justify-content: center;
-  margin-bottom: 1rem;
+    max-height: 100vh;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 1rem;
 }
 
 .title-container {
@@ -67,16 +67,16 @@ header {
 }
 
 .title-image-container {
-  align-self: center;
-  padding: 0 1rem;
+    align-self: center;
+    padding: 0 1rem;
 }
 
 .title-image {
 }
 
 .title-text-container {
-  align-self: center;
-  padding: 0 1rem;
+    align-self: center;
+    padding: 0 1rem;
 }
 
 h1 {
@@ -171,7 +171,7 @@ footer {
     }
 
     h2 {
-      font-size: 1.5rem;
+        font-size: 1.5rem;
     }
 
     nav a {
@@ -179,9 +179,9 @@ footer {
     }
 
     .title-image {
-      width: 4rem;
-      height: max-content;
-      padding: .5rem 0;
+        width: 4rem;
+        height: max-content;
+        padding: .5rem 0;
     }
 
     .social-icon {

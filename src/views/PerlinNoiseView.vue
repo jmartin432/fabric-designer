@@ -24,6 +24,14 @@
                         </option>
                     </select>
                 </div>
+                <div class="control-item">
+                    <label for="octaves">Octaves</label>
+                    <select name="octaves" id="octaves-selector" class="number-select" v-model="octaves">
+                        <option v-for="item in octaveOptions" :value="item.val" :key="item.id">
+                            {{ item.val }}
+                        </option>
+                    </select>
+                </div>
                 <div>
                     <div class="control-item">
                         <label for="gradient-scalar-input">Gradient Scalar: {{ scalar }}</label>
@@ -112,6 +120,11 @@
                     //7: {id: 7, val: 256},
                 },
                 octaves: 1,
+                octaveOptions: {
+                    1: {id: 1, val: 1},
+                    2: {id: 2, val: 2},
+                    3: {id: 3, val: 3},
+                },
                 scalar: 1,
                 numberOfColors: 2,
                 message: 'Standing By...',
@@ -190,6 +203,9 @@
         },
         watch: {
             baseFrequency: function() {
+                this.makeNoise(this.noiseMaker, 'main-canvas');
+            },
+            octaves: function() {
                 this.makeNoise(this.noiseMaker, 'main-canvas');
             },
             numberOfColors: function(value) {
