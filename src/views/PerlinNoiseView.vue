@@ -39,8 +39,16 @@
                     </div>
                 </div>
                 <div class="control-item">
+                    <label for="color-interpolation">Color Interpolation</label>
+                    <select name="color-interpolation" id="color-interpolation" class="text-select" v-model="colorInterpolation">
+                        <option v-for="item in colorInterpolationOptions" :value="item.val" :key="item.id">
+                            {{ item.val }}
+                        </option>
+                    </select>
+                </div>
+                <div class="control-item">
                     <label for="number-of-colors">Number of Colors</label>
-                    <select name="number-of-colors" id="number-of-colors" class="number-select" v-model="numberOfColors" @change="handleNumberOfColorsChange">
+                    <select name="number-of-colors" id="number-of-colors" class="number-select" v-model="numberOfColors">
                         <option v-for="index in 10" :value="index + 1" :key="index + 1">
                             {{ index + 1 }}
                         </option>
@@ -72,7 +80,7 @@
                             </select>
                         </div>
                         <p>Pixels: {{ downloadCanvasWidth }}</p>
-                        <div class="control-item">
+                        <!-- <div class="control-item">
                             <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
                             <input 
                                 required 
@@ -81,7 +89,7 @@
                                 placeholder="File Name" 
                                 v-model="fileName"
                             />
-                        </div>
+                        </div> -->
                         <button class="control-item" @click="handleDownloadClick">Download</button>
                     </div>
                 </Transition>
@@ -124,6 +132,11 @@
                     1: {id: 1, val: 1},
                     2: {id: 2, val: 2},
                     3: {id: 3, val: 3},
+                },
+                colorInterpolation: 'linear',
+                colorInterpolationOptions: {
+                    1: {id: 'linear', val: 'linear'},
+                    2: {id: 'cosine', val: 'cosine'}
                 },
                 scalar: 1,
                 numberOfColors: 2,
@@ -177,7 +190,7 @@
                     this.waitingForNoise = false;
                     this.noise = JSON.parse(message.data.data);
                     console.log("MAIN RECIEVED NOISE MESSAGE FROM NOISEMAKER FOR: ", message.data.forCanvas, this.noise.values.length);
-                    this.makePixels(this.pixelMaker, this.noise, message.data.forCanvas);
+                    this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, message.data.forCanvas);
                 }
             })
             this.pixelMaker.addEventListener("message", (message) => {
@@ -208,6 +221,10 @@
             octaves: function() {
                 this.makeNoise(this.noiseMaker, 'main-canvas');
             },
+            colorInterpolation: function(value) {
+                console.log(value)
+                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
+            },
             numberOfColors: function(value) {
                 if (value === this.colors.length) return;
                 if (value < this.colors.length) {
@@ -224,7 +241,7 @@
                     }
                 }
                 console.log('NEW COLORS: ', this.colors);
-                this.makePixels(this.pixelMaker, this.noise, 'main-canvas')
+                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
             },
             downloadInches: function(value) {
                 this.downloadCanvasWidth = value * this.downloadDpi;
@@ -259,11 +276,11 @@
                 this.makeNoise(this.noiseMaker, 'main-canvas');
             },
 
-            makePixels: function(pixelMaker, noise, forCanvas) {
+            makePixels: function(pixelMaker, noise, colorInterpolation, forCanvas) {
                 this.message = 'Making Pixels...';
                 this.showMessage = true;
                 console.log('MAKING PIXELS!', pixelMaker, noise.values[0]);
-                pixelMaker.postMessage([JSON.stringify(noise), JSON.stringify(this.colors), forCanvas])
+                pixelMaker.postMessage([JSON.stringify(noise), JSON.stringify(this.colors), colorInterpolation, forCanvas])
                 this.waitingForPixels = true;
             },
 
@@ -312,16 +329,7 @@
                 this.colors[index].b = rgb[2];
                 this.showHideMessage(true) 
                 this.message = 'Making Pixels...'
-                this.makePixels(this.pixelMaker, this.noise, 'main-canvas')
-                // setTimeout( () => {
-                //     this.setPixelData()
-                //     .then(() => {
-                //         this.updateCanvas()
-                //     })
-                //     .finally(() => {
-                //         this.showHideMessage(false);
-                //     })
-                // }, 10);
+                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
             },
 
             handlePrepareDownloadClick: function() {
@@ -335,10 +343,10 @@
             },
 
             handleDownloadClick: function() {
-                if (this.fileName === '') {
-                    this.fileNameWarning = ' * File name is required.';
-                    return;
-                }
+                // if (this.fileName === '') {
+                //     this.fileNameWarning = ' * File name is required.';
+                //     return;
+                // }
                 this.makeNoise(this.noiseMaker, 'download-canvas')
             },
 
@@ -347,12 +355,14 @@
                 return canvas.toDataURL('image/png');
             },
 
-            download: function() {   
+            download: function() { 
+                console.log('here')  
                 const image = this.makeFile('download-canvas')
                 image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream')
                 let link = document.createElement('a');
-                link.download = this.fileName + '.png';
-                console.log(link.download)
+                const colorString = this.colors.map((color) => color.value).join('-');
+                let fileName = `${this.baseFrequency}-${this.octaves}-${this.scalar}-${this.colorInterpolation}-${colorString}`
+                link.download = fileName + '.png';
                 link.href = image;
                 link.click();
                 this.resetDownloadDialogue();

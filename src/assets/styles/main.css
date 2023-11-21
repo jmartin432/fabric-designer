@@ -78,6 +78,10 @@ select.number-select {
   width: 70px;
 }
 
+select.text-select {
+  width: 100px;
+}
+
 input[type='range']{
   -webkit-appearance: none;
   margin-top: .5rem;
