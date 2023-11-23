@@ -1,18 +1,19 @@
 onmessage = (e) => {
-    const gridData = JSON.parse(e.data[0]);
-    console.log("Grid received from main script", gridData[0][0]);
-    console.log("Other info: ", e.data.slice(1))
-    const gridSize = e.data[1];
-    const baseFrequency = e.data[2];
-    const octaves = e.data[3];
-    const scalar = e.data[4];
-    const numberOfPixels = e.data[5];
-    const forCanvas = e.data[6];
-    const halfDrop = true;
-    const persistence = .7;
+    console.log(e.data)
+    const xFrequency = e.data[0];
+    const xAmplitude = e.data[1];
+    const xPhaseShift = e.data[2];
+    const xVerticalShift = e.data[3];
+    const yFrequency = e.data[4];
+    const yAmplitude = e.data[5];
+    const yPhaseShift = e.data[6];
+    const yVerticalShift = e.data[7];
+    const numberOfPixels = e.data[8];
+    const forCanvas = e.data[9];
+    const octaves = 1;
 
     console.log('WORKER IS STARTING NOISE.');
-    const noise = {
+    const waves = {
         min: null,
         max: null,
         scaledMin: null,
@@ -21,50 +22,39 @@ onmessage = (e) => {
     }
     for (let y = 0; y < numberOfPixels; y++){
         for (let x = 0; x < numberOfPixels; x++) {
-            let frequency = baseFrequency;
+            let xMapped = mapNumberRange(x, 0, numberOfPixels, 0, 2 * Math.PI)
+            let yMapped = mapNumberRange(y, 0, numberOfPixels, 0, 2 * Math.PI)
             let value = 0;
-            let amplitude = 1;
             for (let i = 0; i < octaves; i++) {
-                let binSize = gridSize / frequency;
-                //console.log('bin Size', binSize)
-                let xMapped = mapNumberRange(x, 0, numberOfPixels, 0, frequency);
-                let yMapped = mapNumberRange(y, 0, numberOfPixels, 0, frequency);
-                let bin = [Math.floor(xMapped), Math.floor(yMapped)];
-               // console.log(xMapped, yMapped, bin)
-                let tlGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 0, scalar, halfDrop)
-                let trGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 0, scalar, halfDrop)
-                let blGradient = getCornerGradients(gridData, frequency, binSize, bin, 0, 1, scalar, halfDrop)
-                let brGradient = getCornerGradients(gridData, frequency, binSize, bin, 1, 1, scalar, halfDrop)
-                //console.log('MAKE NOISE: ', xGrid, yGrid, tlGradient, trGradient, blGradient, brGradient)
-                value += amplitude * clamp(getValue(xMapped, yMapped, bin, tlGradient, trGradient, blGradient, brGradient), -1, 1);
-                amplitude *= persistence;
-                //console.log(i, amplitude, value)
-                frequency *= 2;
+                value += xAmplitude * Math.sin(xFrequency * (xMapped + xPhaseShift)) + xVerticalShift;
+                value += yAmplitude * Math.cos(yFrequency * (yMapped + yPhaseShift)) + yVerticalShift;
             }
-            noise.min = (noise.min) ? Math.min(value, noise.min) : value;
-            noise.max = (noise.max) ? Math.max(value, noise.max) : value;
-            noise.values.push({
+            //console.log(value)
+            waves.min = (waves.min) ? Math.min(value, waves.min) : value;
+            waves.max = (waves.max) ? Math.max(value, waves.max) : value;
+            waves.values.push({
                 x: x,
                 y: y,
                 value: value,
                 //scaledValue: utils.mapNumberRange(value, -1, 1, 0, 1)
             })
-            if (noise.values.length % 100 === 0) {
+            if (waves.values.length % 100 === 0) {
                 postMessage({
                     type: 'percent',
-                    data: noise.values.length / (numberOfPixels**2)
+                    data: waves.values.length / (numberOfPixels**2)
                 })
             }
         }
     }
-    noise.values.forEach((item) => item.scaledValue = mapNumberRange(item.value, noise.min, noise.max, 0, 1))
-    noise.scaledMin = mapNumberRange(noise.min, noise.min, noise.max, 0, 1);
-    noise.scaledMax = mapNumberRange(noise.max, noise.min, noise.max, 0, 1)
-    console.log('WORKER FINISHED NOISE.', noise.values[0])
+    console.log(waves.min, waves.max)
+    waves.values.forEach((item) => item.scaledValue = mapNumberRange(item.value, waves.min, waves.max, 0, 1))
+    waves.scaledMin = mapNumberRange(waves.min, waves.min, waves.max, 0, 1);
+    waves.scaledMax = mapNumberRange(waves.max, waves.min, waves.max, 0, 1)
+    console.log('WORKER FINISHED WAVES.', waves)
     postMessage({
         type: 'noise',
         forCanvas: forCanvas,
-        data: JSON.stringify(noise)
+        data: JSON.stringify(waves)
     })
 };
 

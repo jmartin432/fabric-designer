@@ -16,6 +16,7 @@ import { RouterLink, RouterView } from 'vue-router'
             <nav>
                 <RouterLink to="/">About</RouterLink>
                 <RouterLink to="/perlin-noise">Perlin Noise</RouterLink>
+                <RouterLink to="/sine-waves">Sine Waves</RouterLink>
             </nav>
     </header>
 

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AboutView from '../views/AboutView.vue'
 import PerlinNoiseView from '../views/PerlinNoiseView.vue'
+import SineWavesView from '../views/SineWavesView.vue'
 
 const router = createRouter({
   scrollBehavior(to, from, savedPosition) {
@@ -17,8 +18,12 @@ const router = createRouter({
     {
       path: '/perlin-noise',
       name: 'perlin-noise',
-      
       component: PerlinNoiseView
+    },
+    {
+      path: '/sine-waves',
+      name: 'sine-waves',
+      component: SineWavesView
     }
   ]
 })

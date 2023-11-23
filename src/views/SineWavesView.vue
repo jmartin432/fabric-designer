@@ -15,23 +15,30 @@
                 <canvas id="main-canvas" :width="mainCanvasWidth" :height="mainCanvasWidth"></canvas>
             </div>
             <div class="flex-item">
-                <button  class="control-item" @click="handleResetGrid">Reset Grid</button>
                 <div class="control-item">
-                    <label for="grid-size">Base Frequency</label>
-                    <select name="grid-size" id="grid-size-selector" class="number-select" v-model="baseFrequency">
+                    <label for="x-frequency">X Frequency</label>
+                    <select name="x-frequency" id="x-frequency-selector" class="number-select" v-model="xFrequency">
                         <option v-for="item in baseFrequencyOptions" :value="item.val" :key="item.id">
                             {{ item.val }}
                         </option>
                     </select>
                 </div>
                 <div class="control-item">
+                    <label for="y-frequency">Y Frequency</label>
+                    <select name="y-frequencyy" id="y-frequency-selector" class="number-select" v-model="yFrequency">
+                        <option v-for="item in baseFrequencyOptions" :value="item.val" :key="item.id">
+                            {{ item.val }}
+                        </option>
+                    </select>
+                </div>
+                <!-- <div class="control-item">
                     <label for="octaves">Octaves</label>
                     <select name="octaves" id="octaves-selector" class="number-select" v-model="octaves">
                         <option v-for="item in octaveOptions" :value="item.val" :key="item.id">
                             {{ item.val }}
                         </option>
                     </select>
-                </div>
+                </div> -->
                 <div>
                     <div class="control-item">
                         <label for="gradient-scalar-input">Gradient Scalar: {{ scalar }}</label>
@@ -109,23 +116,31 @@
                 downloadDpi: 96,
                 downloadInches: 4,
                 downloadCanvasWidth: 384,
-                noiseMaker: {},
-                waitingForNoise: false,
+                wavesMaker: {},
+                waitingForWaves: false,
                 pixelMaker: {},
                 waitingForPixels: false,
+                xFrequency: 2,
+                xAmplitude: -5,
+                xPhaseShift: 1.5,
+                xVerticalShift: 4, 
+                yFrequency: 4,
+                yAmplitude: 1,
+                yPhaseShift: 50,
+                yVerticalShift: 2,
                 gridSize: 256,
                 grid: [],
                 mainNoise: {},
                 downloadNoise: {},
                 baseFrequency: 4,
                 baseFrequencyOptions: {
-                    1: {id: 1, val: 4},
-                    2: {id: 2, val: 8},
-                    3: {id: 3, val: 16},
-                    4: {id: 4, val: 32},
-                    5: {id: 5, val: 64},
-                    //6: {id: 6, val: 128},
-                    //7: {id: 7, val: 256},
+                    1: {id: 1, val: 1},
+                    2: {id: 2, val: 2},
+                    3: {id: 3, val: 4},
+                    4: {id: 4, val: 8},
+                    5: {id: 5, val: 16},
+                    6: {id: 6, val: 32},
+                    7: {id: 7, val: 64},
                 },
                 octaves: 1,
                 octaveOptions: {
@@ -179,9 +194,9 @@
             let ctx2 = c2.getContext("2d");
             this.downloadCanvas = ctx2;
 
-            this.noiseMaker = new Worker('perlinNoiseMaker.js')
+            this.wavesMaker = new Worker('SineWavesMaker.js')
             this.pixelMaker = new Worker('pixelMaker.js')
-            this.noiseMaker.addEventListener("message", (message) => {
+            this.wavesMaker.addEventListener("message", (message) => {
                 const type = message.data.type
                 if (type === 'percent') {
                    // console.log("MAIN RECIEVED PERCENT MESSAGE FROM NOISEMAKER: ", message.data.data);
@@ -211,12 +226,14 @@
                     this.addPixelsToCanvas(Uint8Pixels, message.data.forCanvas);
                 }
             })
-            await this.makeGrid();
-            this.makeNoise(this.noiseMaker, 'main-canvas');
+            this.makeWaves(this.wavesMaker, 'main-canvas');
         },
         watch: {
-            baseFrequency: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
+            xFrequency: function() {
+                this.makeWaves(this.wavesMaker, 'main-canvas');
+            },
+            yFrequency: function() {
+                this.makeWaves(this.wavesMaker, 'main-canvas');
             },
             octaves: function() {
                 this.makeNoise(this.noiseMaker, 'main-canvas');
@@ -260,13 +277,13 @@
                 this.grid = perlinUtils.makeGrid(this.gridSize);
             },
 
-            makeNoise: function(noiseMaker, forCanvas) {
-                this.message = 'Making Noise...'
+            makeWaves: function(wavesMaker, forCanvas) {
+                this.message = 'Making Waves...'
                 this.showMessage = true;
-                console.log('MAKING NOISE!')
+                console.log('MAKING WAVES!')
                 const canvasWidth = (forCanvas === 'main-canvas') ? this.mainCanvasWidth : this.downloadCanvasWidth
-                noiseMaker.postMessage([JSON.stringify(this.grid), this.gridSize, this.baseFrequency, this.octaves, this.scalar, canvasWidth, forCanvas])
-                this.waitingForNoise = true;
+                wavesMaker.postMessage([this.xFrequency, this.xAmplitude, this.xPhaseShift, this.xVerticalShift, this.yFrequency, this.yAmplitude, this.yPhaseShift, this.yVerticalShift, canvasWidth, forCanvas])
+                this.waitingForWaves = true;
             },
 
             handleResetGrid: async function() {
