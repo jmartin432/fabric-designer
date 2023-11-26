@@ -11,38 +11,53 @@
             </div>
         <div id="display-container">
             <div id="canvas-container" class="flex-item">
-                <!-- This is why the canvas goes blank on pixel change -->
                 <canvas id="main-canvas" :width="mainCanvasWidth" :height="mainCanvasWidth"></canvas>
             </div>
             <div class="flex-item">
                 <div class="control-item">
-                    <label for="x-frequency">X Frequency</label>
-                    <select name="x-frequency" id="x-frequency-selector" class="number-select" v-model="xFrequency">
-                        <option v-for="item in baseFrequencyOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
+                    <label for="x-frequencies">X Frequencies</label>
+                    <select name="x-frequencies" id="x-frequencies-selector" class="number-select" v-model="xFrequenciesNumber">
+                        <option v-for="index in 7" :value="index" :key="index">
+                            {{ index }}
                         </option>
                     </select>
+                </div>
+                <div id="x-frequencies">
+                    <div v-for="(item, index) in xFrequencies" :key="index" class="control-item">
+                        <label :for="'x-frequency-' + index">Frequency {{ index + 1 }}: ({{ xFrequencies[index] }})</label>
+                        <input 
+                            type="range" 
+                            :id="'x-frequency-' + index" 
+                            :name="'x-frequency-' + index" 
+                            v-model="xFrequencies[index]" 
+                            @input="handleFrequencyChange"
+                            min="1"
+                            max="7"
+                            step="1"
+                        />
+                    </div>
                 </div>
                 <div class="control-item">
-                    <label for="y-frequency">Y Frequency</label>
-                    <select name="y-frequencyy" id="y-frequency-selector" class="number-select" v-model="yFrequency">
-                        <option v-for="item in baseFrequencyOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
+                    <label for="y-frequencies">Y Frequencies</label>
+                    <select name="y-frequencies" id="y-frequencies-selector" class="number-select" v-model="yFrequenciesNumber">
+                        <option v-for="index in 7" :value="index" :key="index">
+                            {{ index }}
                         </option>
                     </select>
                 </div>
-                <!-- <div class="control-item">
-                    <label for="octaves">Octaves</label>
-                    <select name="octaves" id="octaves-selector" class="number-select" v-model="octaves">
-                        <option v-for="item in octaveOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
-                        </option>
-                    </select>
-                </div> -->
-                <div>
-                    <div class="control-item">
-                        <label for="gradient-scalar-input">Gradient Scalar: {{ scalar }}</label>
-                        <input type="range" id="gradient-scalar--input" name="gradient-scalar-input" min=".1" max="9.9" step=".1" v-model="scalar" @change="handleScalarChange">
+                <div id="y-frequencies">
+                    <div v-for="(item, index) in yFrequencies" :key="index" class="control-item">
+                        <label :for="'y-frequency-' + index">Frequency {{ index + 1 }}: ({{ yFrequencies[index] }})</label>
+                        <input 
+                            type="range" 
+                            :id="'y-frequency-' + index" 
+                            :name="'y-frequency-' + index" 
+                            v-model="yFrequencies[index]" 
+                            @input="handleFrequencyChange"
+                            min="1"
+                            max="7"
+                            step="1"
+                        />                    
                     </div>
                 </div>
                 <div class="control-item">
@@ -61,7 +76,7 @@
                         </option>
                     </select>
                 </div>
-                <div id="color=pickers">
+                <div id="color-pickers">
                     <div v-for="(item, index) in colors" :key=index class="control-item">
                         <label for="head">Color {{ index }}</label>
                         <input type="color" :id="'color-' + index" :name="'color-' + index" v-model="colors[index].value" @input="handleColorChange"/>
@@ -120,40 +135,17 @@
                 waitingForWaves: false,
                 pixelMaker: {},
                 waitingForPixels: false,
-                xFrequency: 2,
-                xAmplitude: -5,
-                xPhaseShift: 1.5,
-                xVerticalShift: 4, 
-                yFrequency: 4,
-                yAmplitude: 1,
-                yPhaseShift: 50,
-                yVerticalShift: 2,
-                gridSize: 256,
-                grid: [],
-                mainNoise: {},
-                downloadNoise: {},
-                baseFrequency: 4,
-                baseFrequencyOptions: {
-                    1: {id: 1, val: 1},
-                    2: {id: 2, val: 2},
-                    3: {id: 3, val: 4},
-                    4: {id: 4, val: 8},
-                    5: {id: 5, val: 16},
-                    6: {id: 6, val: 32},
-                    7: {id: 7, val: 64},
-                },
-                octaves: 1,
-                octaveOptions: {
-                    1: {id: 1, val: 1},
-                    2: {id: 2, val: 2},
-                    3: {id: 3, val: 3},
-                },
+                xFrequenciesNumber: 1,
+                xFrequencies: [4],
+                yFrequenciesNumber: 1,
+                yFrequencies: [4],
+                mainWaves: {},
+                downloadWaves: {},
                 colorInterpolation: 'linear',
                 colorInterpolationOptions: {
                     1: {id: 'linear', val: 'linear'},
                     2: {id: 'cosine', val: 'cosine'}
                 },
-                scalar: 1,
                 numberOfColors: 2,
                 message: 'Standing By...',
                 showMessage: true,
@@ -201,7 +193,7 @@
                 if (type === 'percent') {
                    // console.log("MAIN RECIEVED PERCENT MESSAGE FROM NOISEMAKER: ", message.data.data);
                 }
-                if (type === 'noise') {
+                if (type === 'waves') {
                     this.waitingForNoise = false;
                     this.noise = JSON.parse(message.data.data);
                     console.log("MAIN RECIEVED NOISE MESSAGE FROM NOISEMAKER FOR: ", message.data.forCanvas, this.noise.values.length);
@@ -229,14 +221,29 @@
             this.makeWaves(this.wavesMaker, 'main-canvas');
         },
         watch: {
-            xFrequency: function() {
+            xFrequenciesNumber: function(value) {
+                if (value === this.xFrequencies.length) return;
+                if (value < this.xFrequencies.length) {
+                    this.xFrequencies = this.xFrequencies.slice(0, value)
+                }
+                if(value > this.xFrequencies.length) {
+                    for (let i=this.xFrequencies.length; i < value; i++) {
+                        this.xFrequencies.push(1)
+                    }
+                }
                 this.makeWaves(this.wavesMaker, 'main-canvas');
             },
-            yFrequency: function() {
+            yFrequenciesNumber: function(value) {
+                if (value === this.yFrequencies.length) return;
+                if (value < this.yFrequencies.length) {
+                    this.yFrequencies = this.yFrequencies.slice(0, value)
+                }
+                if(value > this.yFrequencies.length) {
+                    for (let i=this.yFrequencies.length; i < value; i++) {
+                        this.yFrequencies.push(1)
+                    }
+                }
                 this.makeWaves(this.wavesMaker, 'main-canvas');
-            },
-            octaves: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
             },
             colorInterpolation: function(value) {
                 console.log(value)
@@ -257,7 +264,6 @@
                         })
                     }
                 }
-                console.log('NEW COLORS: ', this.colors);
                 this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
             },
             downloadInches: function(value) {
@@ -269,44 +275,39 @@
         },
         computed: {},
         methods: {
-            makeGrid: async function () {
-                console.log('CREATING GRID!')
-                this.grid = [];
-                // this.showMessage = true;
-                // this.showHideMessage(true)
-                this.grid = perlinUtils.makeGrid(this.gridSize);
-            },
 
             makeWaves: function(wavesMaker, forCanvas) {
                 this.message = 'Making Waves...'
                 this.showMessage = true;
                 console.log('MAKING WAVES!')
                 const canvasWidth = (forCanvas === 'main-canvas') ? this.mainCanvasWidth : this.downloadCanvasWidth
-                wavesMaker.postMessage([this.xFrequency, this.xAmplitude, this.xPhaseShift, this.xVerticalShift, this.yFrequency, this.yAmplitude, this.yPhaseShift, this.yVerticalShift, canvasWidth, forCanvas])
+                wavesMaker.postMessage([JSON.stringify(this.xFrequencies), JSON.stringify(this.yFrequencies), canvasWidth, forCanvas])
                 this.waitingForWaves = true;
             },
 
-            handleResetGrid: async function() {
-                this.message = 'Resetting Grid...'
-                this.showMessage = true;
-                await this.makeGrid();
-                this.makeNoise(this.noiseMaker, 'main-canvas');
+            handleFrequencyChange: function(event) {
+                console.log(event.target.id[0])
+                let index = event.target.id.split('-')[2]
+                if (event.target.id[0] === 'x') {
+                    this.xFrequencies[index] = event.target.value;
+                    console.log(this.xFrequencies)
+                } else {
+                    this.yFrequencies[index] = event.target.value;
+                    console.log(this.yFrequencies)
+                }
+                this.makeWaves(this.wavesMaker, 'main-canvas');
             },
 
-            makePixels: function(pixelMaker, noise, colorInterpolation, forCanvas) {
+            makePixels: function(pixelMaker, waves, colorInterpolation, forCanvas) {
                 this.message = 'Making Pixels...';
                 this.showMessage = true;
-                console.log('MAKING PIXELS!', pixelMaker, noise.values[0]);
-                pixelMaker.postMessage([JSON.stringify(noise), JSON.stringify(this.colors), colorInterpolation, forCanvas])
+                console.log('MAKING PIXELS!', pixelMaker, waves.values[0]);
+                pixelMaker.postMessage([JSON.stringify(waves), JSON.stringify(this.colors), colorInterpolation, forCanvas])
                 this.waitingForPixels = true;
             },
 
             showHideMessage: async function(value) {
                 this.showMessage = value
-            },
-
-            handleScalarChange: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
             },
 
             addPixelsToCanvas(pixels, forCanvas) {
@@ -325,11 +326,6 @@
                     this.downloadCanvas.putImageData(imageData, 0, 0);
                     this.download();
                 }
-
-                // console.log("IMAGE DATA: ", imageData);
-                // console.log('PIXELS: ', pixels);
-        
-                //imageData.data = pixels;
             },
 
             setCanvasSize: async function() {
@@ -360,11 +356,7 @@
             },
 
             handleDownloadClick: function() {
-                // if (this.fileName === '') {
-                //     this.fileNameWarning = ' * File name is required.';
-                //     return;
-                // }
-                this.makeNoise(this.noiseMaker, 'download-canvas')
+                this.makeWaves(this.wavesMaker, 'download-canvas')
             },
 
             makeFile: function(fromCanvas) {
@@ -377,8 +369,7 @@
                 const image = this.makeFile('download-canvas')
                 image.replace(/^data:image\/[^;]*/, 'data:application/octet-stream')
                 let link = document.createElement('a');
-                const colorString = this.colors.map((color) => color.value).join('-');
-                let fileName = `${this.baseFrequency}-${this.octaves}-${this.scalar}-${this.colorInterpolation}-${colorString}`
+                let fileName = `(${this.xFrequencies.join('-')})-(${this.yFrequencies.join('-')})-(${this.colors.map((color) => color.value).join('-')})`
                 link.download = fileName + '.png';
                 link.href = image;
                 link.click();

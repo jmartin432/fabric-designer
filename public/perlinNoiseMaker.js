@@ -41,6 +41,7 @@ onmessage = (e) => {
                 //console.log(i, amplitude, value)
                 frequency *= 2;
             }
+        
             noise.min = (noise.min) ? Math.min(value, noise.min) : value;
             noise.max = (noise.max) ? Math.max(value, noise.max) : value;
             noise.values.push({
