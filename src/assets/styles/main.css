@@ -13,10 +13,30 @@ body {
   /* border: 1px solid red; */
 }
 
-h3 {
-  font-family: Poppins;
-  font-size: 2rem;
+h1 {
+  font-size: 4rem;
+  color: #D175CB;
+  font-family: Oswald;
+  font-weight: 700;
+  /* text-shadow: 2px 2px 5px #D175CB88; */
+  margin: 0;
+}
+
+h2 {
+  font-size: 3rem;
   color: #75CBD1;
+  font-family: Poppins;
+  font-weight: 400;
+  margin: 0;
+}
+
+h3 {
+  text-align: center;
+  font-family: Poppins;
+  font-size: 1.5rem;
+  color: #D175CB;
+  margin: 0 0 .5rem 0;
+  border-bottom: 1px solid #CBD175
 }
 
 p {

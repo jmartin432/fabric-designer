@@ -1,10 +1,13 @@
+onmessage = (e) => {
+    console.log('GRIDMAKER IS STARTING.');
+    const gridSize = e.data[0];
 
 
-const makeGrid = (n) => {
+    
     let yArray = [];
-    for (let i=0; i<n; i++) {
+    for (let i=0; i<gridSize; i++) {
         let xArray = [];
-        for (let j=0; j<n; j++) {
+        for (let j=0; j<gridSize; j++) {
             xArray.push({
                 x: j,
                 y: i,
@@ -13,8 +16,12 @@ const makeGrid = (n) => {
         }
         yArray.push(xArray)
     }
-    return yArray;
-}
+    console.log('GRIDMAKER FINISHED.')
+    postMessage({
+        type: 'grid',
+        data: JSON.stringify(yArray)
+    })
+};
 
 const randomUnitVector = () => {
     const theta = Math.random() * 2 * Math.PI;
@@ -24,5 +31,3 @@ const randomUnitVector = () => {
         y: Math.sin(theta)
     };
 }
-
-export { makeGrid };
