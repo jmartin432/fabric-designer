@@ -1,12 +1,12 @@
 <template>
     <Transition name="show">
         <div v-if="show" id="tiling-modal-container" :style="styles">
-            <button  class="control-item" @click="$emit('closeModal', false)">Close</button>
+            <button  class="control-item" @click="$emit('closeTilingModal', false)">Close</button>
         </div>
     </Transition>
 </template>
 
-<script>;
+<script>
     export default {
         props: {
             show: {

@@ -80,23 +80,6 @@ header {
     padding: 0 1rem;
 }
 
-h1 {
-    font-size: 4rem;
-    color: #D175CB;
-    font-family: Oswald;
-    font-weight: 700;
-    /* text-shadow: 2px 2px 5px #D175CB88; */
-    margin: 0;
-}
-
-h2 {
-    font-size: 3rem;
-    color: #75CBD1;
-    font-family: Poppins;
-    font-weight: 400;
-    margin: 0;
-}
-
 nav {
     width: 100%;
     font-size: 1rem;

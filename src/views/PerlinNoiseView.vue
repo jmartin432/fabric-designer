@@ -2,101 +2,44 @@
     import * as perlinUtils from '../modules/perlinUtils.js';
     import * as utils from '../modules/utils.js';
     import TilingModal from '../components/TilingModal.vue'
+    import ColorComponent from '../components/ColorComponent.vue'
+    import DownloadComponent from '../components/DownloadComponent.vue'
+    import PerlinControls from '../components/PerlinControls.vue';
 </script>
 
 <template>
     <div id="container">
-            <div id="message-container">
-                <p id="message" :class="showMessage ? 'show' : 'hide'">{{ message }}</p>
-            </div>
-        <div id="display-container">
+        <div id="message-container">
+            <p id="message" :class="showMessage ? 'show' : 'hide'">{{ message }}</p>
+        </div>
+    <div id="display-container">
+            <canvas id="download-canvas" :width="downloadCanvasWidth" :height="downloadCanvasWidth"></canvas>
             <div id="canvas-container" class="flex-item">
-                <!-- This is why the canvas goes blank on pixel change -->
                 <canvas id="main-canvas" :width="mainCanvasWidth" :height="mainCanvasWidth"></canvas>
             </div>
             <div class="flex-item">
-                <button  class="control-item" @click="handleResetGrid">Reset Grid</button>
-                <div class="control-item">
-                    <label for="grid-size">Base Frequency</label>
-                    <select name="grid-size" id="grid-size-selector" class="number-select" v-model="baseFrequency">
-                        <option v-for="item in baseFrequencyOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
-                        </option>
-                    </select>
-                </div>
-                <div class="control-item">
-                    <label for="octaves">Octaves</label>
-                    <select name="octaves" id="octaves-selector" class="number-select" v-model="octaves">
-                        <option v-for="item in octaveOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
-                        </option>
-                    </select>
-                </div>
-                <div>
-                    <div class="control-item">
-                        <label for="gradient-scalar-input">Gradient Scalar: {{ scalar }}</label>
-                        <input type="range" id="gradient-scalar--input" name="gradient-scalar-input" min=".1" max="9.9" step=".1" v-model="scalar" @change="handleScalarChange">
-                    </div>
-                </div>
-                <div class="control-item">
-                    <label for="color-interpolation">Color Interpolation</label>
-                    <select name="color-interpolation" id="color-interpolation" class="text-select" v-model="colorInterpolation">
-                        <option v-for="item in colorInterpolationOptions" :value="item.val" :key="item.id">
-                            {{ item.val }}
-                        </option>
-                    </select>
-                </div>
-                <div class="control-item">
-                    <label for="number-of-colors">Number of Colors</label>
-                    <select name="number-of-colors" id="number-of-colors" class="number-select" v-model="numberOfColors">
-                        <option v-for="index in 10" :value="index + 1" :key="index + 1">
-                            {{ index + 1 }}
-                        </option>
-                    </select>
-                </div>
-                <div id="color=pickers">
-                    <div v-for="(item, index) in colors" :key=index class="control-item">
-                        <label for="head">Color {{ index }}</label>
-                        <input type="color" :id="'color-' + index" :name="'color-' + index" v-model="colors[index].value" @input="handleColorChange"/>
-                    </div>
-                </div>
+                <PerlinControls 
+                    @base-frequency-change="handleBaseFrequencyChange"
+                    @octaves-change="handleOctavesChange"
+                    @scalar-change="handleScalarChange"
+                    @reset-grid="handleResetGrid"/>
             </div>
             <div class="flex-item">
-                <canvas id="download-canvas" :width="downloadCanvasWidth" :height="downloadCanvasWidth"></canvas>
-                <button class="control-item" @click="handleShowTilingModal">Show Tiling</button>
-                <button class="control-item" @click="handlePrepareDownloadClick">Prepare Download</button>
-                <Transition name="show-download">
-                    <div v-if="showDownloadDialogue" id="download-dialogue">
-                        <div class="control-item">
-                            <label for="inches-input">Inches</label>
-                            <input type="number" id="inches-input" name="inches-input" min="1" max="12" step=".5" v-model="downloadInches">
-                        </div>
-                        <div class="control-item">
-                            <label for="dpi-input">DPI</label>
-                            <select name="dpi-input" id="dpi-input" class="number-select" v-model="downloadDpi">
-                                <option v-for="item in dpiOptions" :value="item.val" :key="item.id">
-                                    {{ item.val }}
-                                </option>
-                            </select>
-                        </div>
-                        <p>Pixels: {{ downloadCanvasWidth }}</p>
-                        <!-- <div class="control-item">
-                            <label for="file-name-input">File Name<span>{{ fileNameWarning }}</span></label>
-                            <input 
-                                required 
-                                type="text" 
-                                id="file-name-input" 
-                                placeholder="File Name" 
-                                v-model="fileName"
-                            />
-                        </div> -->
-                        <button class="control-item" @click="handleDownloadClick">Download</button>
-                    </div>
-                </Transition>
+                <ColorComponent 
+                    @color-change="(n) => { console.log('COLORS', this.colors); this.colors = n.map(color => color) }"
+                    @color-interpolation-change="(n) => { console.log('COLOR INTERP', n); this.colorInterpolation = n }"/>
+            </div>
+            <div class="flex-item">
+                <DownloadComponent 
+                    @download-click="(n) => console.log('DOWNLOAD', n)"
+                    @show-tiling-modal="(n) => { console.log('MODAL', n); this.showTilingModal = n }"/>
             </div>
         </div>
     </div>
-    <TilingModal :show="showTilingModal" :background="modalBackground" @close-modal="(n) => { console.log(m); showTilingModal = n}"/>
+    <TilingModal 
+        :show="showTilingModal" 
+        :background="modalBackground" 
+        @close-tiling-modal="(n) => { this.showTilingModal = n }"/>
 </template>
 
 <script>
@@ -106,190 +49,88 @@
                 mainCanvas: {},
                 mainCanvasWidth: 512,
                 downloadCanvas: {},
-                downloadDpi: 96,
-                downloadInches: 4,
-                downloadCanvasWidth: 384,
+                gridMaker: {},
                 noiseMaker: {},
-                waitingForNoise: false,
                 pixelMaker: {},
+                waitingForGrid: false,
+                waitingForNoise: false,
                 waitingForPixels: false,
                 gridSize: 256,
                 grid: [],
                 mainNoise: {},
                 downloadNoise: {},
                 baseFrequency: 4,
-                baseFrequencyOptions: {
-                    1: {id: 1, val: 4},
-                    2: {id: 2, val: 8},
-                    3: {id: 3, val: 16},
-                    4: {id: 4, val: 32},
-                    5: {id: 5, val: 64},
-                    //6: {id: 6, val: 128},
-                    //7: {id: 7, val: 256},
-                },
                 octaves: 1,
-                octaveOptions: {
-                    1: {id: 1, val: 1},
-                    2: {id: 2, val: 2},
-                    3: {id: 3, val: 3},
-                },
-                colorInterpolation: 'linear',
-                colorInterpolationOptions: {
-                    1: {id: 'linear', val: 'linear'},
-                    2: {id: 'cosine', val: 'cosine'}
-                },
                 scalar: 1,
-                numberOfColors: 2,
                 message: 'Standing By...',
-                showMessage: true,
-                //mainPixelData: {},
-                showDownloadDialogue: false,
-                dpiOptions: {
-                    1: {id: 96, val: 96},
-                    2: {id: 150, val: 150},
-                    3: {id: 200, val: 200},
-                    4: {id: 300, val: 300}
-                },
-                //downloadPixelData: {},
-                fileName: '',
-                fileNameWarning: ' * ',
+                showMessage: false,                
+                showTilingModal: false,
+                modalBackground: '',
+                colorInterpolation: 'linear',
                 colors: [
                     {
                         value: '#000000',
-                        r: 0,
-                        g: 0,
-                        b: 0
+                        rgb: [0, 0, 0]
                     },
                     {
                         value: '#ffffff',
-                        r: 255,
-                        g: 255,
-                        b: 255
+                        rgb: [255, 255, 255]
                     }
                 ],
-                showTilingModal: false,
-                modalBackground: ''
+
             }
         },
-        async mounted() {
-            let c1 = document.getElementById("main-canvas");
-            let ctx1 = c1.getContext("2d");    
-            this.mainCanvas = ctx1;
-            let c2 = document.getElementById("download-canvas");
-            let ctx2 = c2.getContext("2d");
-            this.downloadCanvas = ctx2;
-
-            this.noiseMaker = new Worker('perlinNoiseMaker.js')
-            this.pixelMaker = new Worker('pixelMaker.js')
-            this.noiseMaker.addEventListener("message", (message) => {
-                const type = message.data.type
-                if (type === 'percent') {
-                   // console.log("MAIN RECIEVED PERCENT MESSAGE FROM NOISEMAKER: ", message.data.data);
-                }
-                if (type === 'noise') {
-                    this.waitingForNoise = false;
-                    this.noise = JSON.parse(message.data.data);
-                    console.log("MAIN RECIEVED NOISE MESSAGE FROM NOISEMAKER FOR: ", message.data.forCanvas, this.noise.values.length);
-                    this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, message.data.forCanvas);
-                }
-            })
-            this.pixelMaker.addEventListener("message", (message) => {
-                const type = message.data.type
-                if (type === 'percent') {
-                  //  console.log("MAIN RECIEVED PERCENT MESSAGE FROM PIXELMAKER: ", message.data.data);
-                }
-                if (type === 'pixels') {
-                    this.waitingForPixels = false;
-                    this.message = 'Standing By...',
-                    this.showMessage = false;
-                    const pixels = JSON.parse(message.data.data);
-                    const Uint8Pixels = new Uint8ClampedArray(pixels.length);
-                    for (let i = 0; i < pixels.length; i++) {
-                        Uint8Pixels[i] = Math.round(pixels[i])
-                    }
-                    console.log("MAIN RECIEVED PIXELS MESSAGE FROM PIXELMAKER FOR: ", message.data.forCanvas, pixels.length);
-                    this.addPixelsToCanvas(Uint8Pixels, message.data.forCanvas);
-                }
-            })
-            await this.makeGrid();
-            this.makeNoise(this.noiseMaker, 'main-canvas');
-        },
         watch: {
-            baseFrequency: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
-            },
-            octaves: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
-            },
-            colorInterpolation: function(value) {
-                console.log(value)
-                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
-            },
-            numberOfColors: function(value) {
-                if (value === this.colors.length) return;
-                if (value < this.colors.length) {
-                    this.colors = this.colors.slice(0, value)
-                }
-                if(value > this.colors.length) {
-                    for (let i=this.colors.length; i < value; i++) {
-                        this.colors.push({
-                            value: (i % 2 === 1) ? '#ffffff' : '#000000',
-                            r: (i % 2 === 1) ? 255 : 0,
-                            g: (i % 2 === 1) ? 255 : 0,
-                            b: (i % 2 === 1) ? 255 : 0
-                        })
-                    }
-                }
-                console.log('NEW COLORS: ', this.colors);
-                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
-            },
-            downloadInches: function(value) {
-                this.downloadCanvasWidth = value * this.downloadDpi;
-            },
-            downloadDpi: function(value) {
-                this.downloadCanvasWidth = value * this.downloadInches;
+            colors: {
+                handler() {
+                    console.log("RECEIVED NEW COLORS")
+                    this.makePixels('main-canvas')
+                },
+                deep: true
             }
         },
         computed: {},
         methods: {
-            makeGrid: async function () {
+            makeGrid: function () {
                 console.log('CREATING GRID!')
+                this.message = 'Making Grid...'
                 this.grid = [];
-                // this.showMessage = true;
-                // this.showHideMessage(true)
-                this.grid = perlinUtils.makeGrid(this.gridSize);
+                this.showMessage = true;
+                this.waitingForGrid = true;
+                this.gridMaker.postMessage(this.gridSize)
             },
 
-            makeNoise: function(noiseMaker, forCanvas) {
+            makeNoise: function(forCanvas) {
                 this.message = 'Making Noise...'
                 this.showMessage = true;
+                this.waitingForNoise = true;
                 console.log('MAKING NOISE!')
                 const canvasWidth = (forCanvas === 'main-canvas') ? this.mainCanvasWidth : this.downloadCanvasWidth
-                noiseMaker.postMessage([JSON.stringify(this.grid), this.gridSize, this.baseFrequency, this.octaves, this.scalar, canvasWidth, forCanvas])
-                this.waitingForNoise = true;
+                this.noiseMaker.postMessage([JSON.stringify(this.grid), this.gridSize, this.baseFrequency, this.octaves, this.scalar, canvasWidth, forCanvas]);
             },
 
-            handleResetGrid: async function() {
-                this.message = 'Resetting Grid...'
-                this.showMessage = true;
-                await this.makeGrid();
-                this.makeNoise(this.noiseMaker, 'main-canvas');
-            },
-
-            makePixels: function(pixelMaker, noise, colorInterpolation, forCanvas) {
+            makePixels: function(forCanvas) {
                 this.message = 'Making Pixels...';
                 this.showMessage = true;
-                console.log('MAKING PIXELS!', pixelMaker, noise.values[0]);
-                pixelMaker.postMessage([JSON.stringify(noise), JSON.stringify(this.colors), colorInterpolation, forCanvas])
                 this.waitingForPixels = true;
+                console.log('MAKING PIXELS!');
+                this.pixelMaker.postMessage([JSON.stringify(this.noise), JSON.stringify(this.colors), this.colorInterpolation, forCanvas])
+            },
+
+            handleBaseFrequencyChange: function(event) {
+                console.log('BASE FREQ', event);
+            },
+
+            handleOctavesChange: function(event) {
+                console.log('OCTAVES', event);
+            },
+
+            handleScalarChange: function(event) {
+                console.log('SCALAR', event);
             },
 
             showHideMessage: async function(value) {
                 this.showMessage = value
-            },
-
-            handleScalarChange: function() {
-                this.makeNoise(this.noiseMaker, 'main-canvas');
             },
 
             addPixelsToCanvas(pixels, forCanvas) {
@@ -308,32 +149,6 @@
                     this.downloadCanvas.putImageData(imageData, 0, 0);
                     this.download();
                 }
-
-                // console.log("IMAGE DATA: ", imageData);
-                // console.log('PIXELS: ', pixels);
-        
-                //imageData.data = pixels;
-            },
-
-            setCanvasSize: async function() {
-                this.canvasWidth = this.numberOfPixels;
-            },
-
-            handleColorChange: async function(event) {
-                let index = event.target.id.split('-')[1]
-                let value = event.target.value
-                this.colors[index].value = value;
-                let rgb = utils.hexToRgb(value)
-                this.colors[index].r = rgb[0];
-                this.colors[index].g = rgb[1];
-                this.colors[index].b = rgb[2];
-                this.showHideMessage(true) 
-                this.message = 'Making Pixels...'
-                this.makePixels(this.pixelMaker, this.noise, this.colorInterpolation, 'main-canvas')
-            },
-
-            handlePrepareDownloadClick: function() {
-                this.showDownloadDialogue = true;
             },
 
             handleShowTilingModal: function() {
@@ -341,20 +156,11 @@
                 console.log(this.modalBackground)
                 this.showTilingModal = true;
             },
-
-            handleDownloadClick: function() {
-                // if (this.fileName === '') {
-                //     this.fileNameWarning = ' * File name is required.';
-                //     return;
-                // }
-                this.makeNoise(this.noiseMaker, 'download-canvas')
-            },
-
+            
             makeFile: function(fromCanvas) {
                 let canvas = document.getElementById(fromCanvas);
                 return canvas.toDataURL('image/png');
             },
-
             download: function() { 
                 console.log('here')  
                 const image = this.makeFile('download-canvas')
@@ -367,14 +173,61 @@
                 link.click();
                 this.resetDownloadDialogue();
             },
-
-            resetDownloadDialogue: function() {
-                this.showDownloadDialogue = false;
-                this.downloadDpi = 96;
-                this.downloadInches = 4;
-                this.fileName = '';
-            },
-        }
+            addWorkerEventListeners: function() {
+                this.gridMaker.addEventListener("message", (message) => {
+                    const type = message.data.type;
+                    if (type === 'grid') {
+                        this.waitingForGrid = false;
+                        this.grid = JSON.parse(message.data.data);
+                        console.log('RECEIVED GRID FROM GRIDMAKER', this.grid);
+                        this.makeNoise('main-canvas')
+                    }
+                })
+                this.noiseMaker.addEventListener("message", (message) => {
+                    const type = message.data.type;
+                    if (type === 'percent') {
+                    console.log("NOISEMAKER PERCENT: ", message.data.data);
+                    }
+                    if (type === 'noise') {
+                        this.waitingForNoise = false;
+                        this.noise = JSON.parse(message.data.data);
+                        console.log("RECIEVED NOISE FROM NOISEMAKER FOR: ", message.data.forCanvas, this.noise.values.length);
+                        this.makePixels(message.data.forCanvas);
+                    }
+                })
+                this.pixelMaker.addEventListener("message", (message) => {
+                    const type = message.data.type
+                    if (type === 'percent') {
+                    console.log("PIXELMAKER PERCENT: ", message.data.data);
+                    }
+                    if (type === 'pixels') {
+                        this.waitingForPixels = false;
+                        this.message = 'Standing By...',
+                        this.showMessage = false;
+                        const pixels = JSON.parse(message.data.data);
+                        const Uint8Pixels = new Uint8ClampedArray(pixels.length);
+                        for (let i = 0; i < pixels.length; i++) {
+                            Uint8Pixels[i] = Math.round(pixels[i])
+                        }
+                        console.log("RECIEVED PIXELS FROM PIXELMAKER FOR: ", message.data.forCanvas, pixels.slice(100));
+                        this.addPixelsToCanvas(Uint8Pixels, message.data.forCanvas);
+                    }
+                })
+            }
+        },
+        mounted() {
+            let c1 = document.getElementById("main-canvas");
+            let ctx1 = c1.getContext("2d");    
+            this.mainCanvas = ctx1;
+            let c2 = document.getElementById("download-canvas");
+            let ctx2 = c2.getContext("2d");
+            this.downloadCanvas = ctx2;
+            this.gridMaker = new Worker('gridMaker.js')
+            this.noiseMaker = new Worker('perlinNoiseMaker.js')
+            this.pixelMaker = new Worker('pixelMaker.js')
+            this.addWorkerEventListeners();
+            this.gridMaker.postMessage([this.gridSize])
+        },
     }
 </script>
 
@@ -382,7 +235,6 @@
     #display-container {
         display: flex;
         width: 100%;
-        /* border: 1px solid red; */
         box-sizing: border-box;
     }
 
@@ -422,20 +274,6 @@
         padding: .5rem 2rem;
         /* border: 1px solid red; */
     }
-
-    .show-download-enter-active {
-        transition: all 0.5s cubic-bezier(1, 0.5, 0.8, 1);
-    }
-
-    .show-download-leave-active {
-        transition: all 0.8s cubic-bezier(1, 0.5, 0.8, 1);
-    }
-
-    .show-download-enter-from,
-    .show-download-leave-to {
-        opacity: 0;
-    }
-
     .control-item {
         margin-bottom: 10px;
     }
