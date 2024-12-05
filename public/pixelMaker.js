@@ -8,7 +8,6 @@ onmessage = (e) => {
     const pixels = []
     const bandWidth = 1 / (colors.length - 1)
     const interpolationFunction = (interpolation === 'linear') ? linearInterpolate : cosineInterpolate
-    console.log(interpolationFunction)
     for (let i=0; i<noise.values.length; i++) {
         // let x = noise.values[i].x;
         // let y = noise.values[i].y;
@@ -17,19 +16,12 @@ onmessage = (e) => {
         //console.log('band: ', band)
         //let band = clamp(Math.floor((colors.length - 1) * value), 0, this.colors.length - 2);
         let mappedValue = mapNumberRange(scaledValue, band * bandWidth, (band + 1) * bandWidth, 0, 1);
-        let r = interpolationFunction(colors[band].r, colors[band + 1].r, mappedValue);
-        let g = interpolationFunction(colors[band].g, colors[band + 1].g, mappedValue);
-        let b = interpolationFunction(colors[band].b, colors[band + 1].b, mappedValue);
+        let r = interpolationFunction(colors[band].rgb[0], colors[band + 1].rgb[0], mappedValue);
+        let g = interpolationFunction(colors[band].rgb[1], colors[band + 1].rgb[1], mappedValue);
+        let b = interpolationFunction(colors[band].rgb[2], colors[band + 1].rgb[2], mappedValue);
        // console.log(`ScaledValue: ${scaledValue} Band: ${band} MappedValue: ${mappedValue}`)
-        pixels.push(r);
-        pixels.push(g);
-        pixels.push(b);
-        pixels.push(255);
-        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 0] = r;
-        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 1] = g;
-        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 2] = b;
-        // this.pixelData.data[x * (this.numberOfPixels * 4) + y * 4 + 3] = 255;
-        if ((pixels.length / 4) % 100 === 0) {
+        pixels.push(r, g, b, 255);
+        if ((pixels.length / 4) % 10000 === 0) {
             postMessage({
                 type: 'percent',
                 data: i / noise.values.length

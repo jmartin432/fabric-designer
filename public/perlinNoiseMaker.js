@@ -1,3 +1,15 @@
+//https://github.com/joeiddon/perlin/tree/master -->
+//https://rtouti.github.io/graphics/perlin-noise-algorithm -->
+//https://adrianb.io/2014/08/09/perlinnoise.html -->
+//https://sighack.com/post/getting-creative-with-perlin-noise-fields -->
+//https://gamedev.stackexchange.com/questions/197861/how-to-handle-octave-frequency-in-the-perlin-noise-algorithm -->
+//https://thebookofshaders.com/13/ -->
+//https://stackoverflow.com/questions/17427461/perlin-noise-value-range -->
+//https://rmarcus.info/blog/2018/03/04/perlin-noise.html -->
+//https://eev.ee/blog/2016/05/29/perlin-noise/ -->
+//https://joeiddon.github.io/projects/javascript/perlin.html -->
+//https://we.copernicus.org/articles/22/1/2022/we-22-1-2022.html -->
+
 onmessage = (e) => {
     const gridData = JSON.parse(e.data[0]);
     console.log("Grid received from main script", gridData[0][0]);
@@ -50,7 +62,7 @@ onmessage = (e) => {
                 value: value,
                 //scaledValue: utils.mapNumberRange(value, -1, 1, 0, 1)
             })
-            if (noise.values.length % 100 === 0) {
+            if (noise.values.length % 10000 === 0) {
                 postMessage({
                     type: 'percent',
                     data: noise.values.length / (numberOfPixels**2)
